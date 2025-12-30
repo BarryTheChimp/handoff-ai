@@ -45,7 +45,10 @@ async function buildApp() {
 
   // Register plugins
   await fastify.register(cors, {
-    origin: process.env.NODE_ENV === 'production' ? false : true,
+    origin: process.env.NODE_ENV === 'production'
+      ? ['https://handoff-ai-frontend.vercel.app', 'https://handoff-ai.vercel.app']
+      : true,
+    credentials: true,
   });
 
   await fastify.register(helmet);
