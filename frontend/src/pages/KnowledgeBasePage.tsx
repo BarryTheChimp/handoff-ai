@@ -22,13 +22,15 @@ import { Navigation } from '../components/organisms/Navigation';
 import { useProject } from '../hooks/useProject';
 import {
   knowledgeApi,
+  contextSourcesApi,
   type GlossaryTerm,
   type CreateGlossaryTermInput,
   type ReferenceDocument,
   type TeamPreferencesConfig,
+  type ContextSource,
 } from '../services/api';
 
-type TabId = 'brief' | 'glossary' | 'documents' | 'preferences';
+type TabId = 'brief' | 'glossary' | 'documents' | 'sources' | 'preferences';
 
 interface Tab {
   id: TabId;
@@ -40,6 +42,7 @@ const TABS: Tab[] = [
   { id: 'brief', label: 'Project Brief', icon: <FileText size={18} /> },
   { id: 'glossary', label: 'Glossary', icon: <Book size={18} /> },
   { id: 'documents', label: 'Documents', icon: <FileUp size={18} /> },
+  { id: 'sources', label: 'Context Sources', icon: <Settings2 size={18} /> },
   { id: 'preferences', label: 'Preferences', icon: <Settings2 size={18} /> },
 ];
 
@@ -97,6 +100,7 @@ export function KnowledgeBasePage() {
         {activeTab === 'brief' && <ProjectBriefTab projectId={selectedProjectId} />}
         {activeTab === 'glossary' && <GlossaryTab projectId={selectedProjectId} />}
         {activeTab === 'documents' && <DocumentsTab projectId={selectedProjectId} />}
+        {activeTab === 'sources' && <ContextSourcesTab projectId={selectedProjectId} />}
         {activeTab === 'preferences' && <PreferencesTab projectId={selectedProjectId} />}
       </main>
     </div>
@@ -786,6 +790,158 @@ function PreferencesTab({ projectId }: { projectId: string }) {
           <p className="text-xs text-toucan-grey-600 mt-1">1-20 criteria per story</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// CONTEXT SOURCES TAB
+// =============================================================================
+
+function ContextSourcesTab({ projectId }: { projectId: string }) {
+  const [sources, setSources] = useState<ContextSource[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+
+  const loadSources = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await contextSourcesApi.list(projectId);
+      setSources(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load context sources');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadSources();
+  }, [loadSources]);
+
+  async function handleToggle(source: ContextSource) {
+    try {
+      await contextSourcesApi.toggle(projectId, source.id, !source.isEnabled);
+      await loadSources();
+    } catch (err) {
+      console.error('Failed to toggle source:', err);
+    }
+  }
+
+  async function handleSync(source: ContextSource) {
+    setSyncingIds(prev => new Set(prev).add(source.id));
+    try {
+      await contextSourcesApi.sync(projectId, source.id);
+      await loadSources();
+    } catch (err) {
+      console.error('Failed to sync source:', err);
+    } finally {
+      setSyncingIds(prev => {
+        const next = new Set(prev);
+        next.delete(source.id);
+        return next;
+      });
+    }
+  }
+
+  function formatDate(dateStr: string | null): string {
+    if (!dateStr) return 'Never';
+    return new Date(dateStr).toLocaleString();
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 size={32} className="animate-spin text-toucan-orange" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-medium text-toucan-grey-100">Context Sources</h2>
+        <p className="text-sm text-toucan-grey-400">
+          Connect additional sources of context for smarter AI translations
+        </p>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-toucan-error/10 border border-toucan-error/30 rounded-lg">
+          <AlertCircle size={18} className="text-toucan-error" />
+          <span className="text-sm text-toucan-error">{error}</span>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {sources.map((source) => (
+          <div
+            key={source.id}
+            className={clsx(
+              'flex items-center justify-between gap-4 p-4 rounded-lg border transition-colors',
+              source.isEnabled
+                ? 'bg-toucan-dark-lighter border-toucan-dark-border'
+                : 'bg-toucan-dark border-toucan-dark-border opacity-60'
+            )}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-toucan-dark flex items-center justify-center text-lg">
+                {source.sourceType === 'specs' && '📋'}
+                {source.sourceType === 'jira' && '🎫'}
+                {source.sourceType === 'document' && '📄'}
+                {source.sourceType === 'confluence' && '📝'}
+                {source.sourceType === 'github' && '🔧'}
+              </div>
+              <div>
+                <h3 className="font-medium text-toucan-grey-100">{source.name}</h3>
+                <p className="text-xs text-toucan-grey-500">
+                  {source.itemCount} items • Last sync: {formatDate(source.lastSyncAt)}
+                </p>
+                {source.lastError && (
+                  <p className="text-xs text-toucan-error mt-1">{source.lastError}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {source.sourceType !== 'jira' && (
+                <button
+                  onClick={() => handleSync(source)}
+                  disabled={syncingIds.has(source.id)}
+                  className="text-sm text-toucan-orange hover:underline disabled:opacity-50"
+                >
+                  {syncingIds.has(source.id) ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    'Sync Now'
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => handleToggle(source)}
+                className={clsx(
+                  'p-2 rounded-md transition-colors',
+                  source.isEnabled
+                    ? 'text-toucan-success hover:bg-toucan-success/10'
+                    : 'text-toucan-grey-400 hover:bg-toucan-dark-lighter'
+                )}
+                title={source.isEnabled ? 'Disable source' : 'Enable source'}
+              >
+                {source.isEnabled ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {sources.length === 0 && (
+        <div className="text-center py-12">
+          <Settings2 size={48} className="text-toucan-grey-600 mx-auto mb-4" />
+          <p className="text-toucan-grey-400">No context sources configured</p>
+        </div>
+      )}
     </div>
   );
 }

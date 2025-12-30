@@ -19,6 +19,7 @@ import { estimateRoutes } from './routes/estimates.js';
 import { coverageRoutes } from './routes/coverage.js';
 import { feedbackRoutes } from './routes/feedback.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
+import { contextSourceRoutes } from './routes/context-sources.js';
 
 // Extend Fastify with authenticate decorator
 declare module 'fastify' {
@@ -106,6 +107,7 @@ async function buildApp() {
   await fastify.register(coverageRoutes);
   await fastify.register(feedbackRoutes);
   await fastify.register(knowledgeRoutes);
+  await fastify.register(contextSourceRoutes);
 
   // Health check endpoint
   fastify.get('/', async (_request, _reply) => {

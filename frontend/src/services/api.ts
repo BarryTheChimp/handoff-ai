@@ -1140,3 +1140,98 @@ export const knowledgeApi = {
     return handleResponse<{ context: string; tokenEstimate: number }>(response);
   },
 };
+
+// =============================================================================
+// CONTEXT SOURCES TYPES & API
+// =============================================================================
+
+export type ContextSourceType = 'specs' | 'jira' | 'document' | 'confluence' | 'github';
+
+export interface ContextSource {
+  id: string;
+  projectId: string;
+  sourceType: ContextSourceType;
+  name: string;
+  isEnabled: boolean;
+  config: Record<string, unknown>;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  itemCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContextSearchResult {
+  sourceType: ContextSourceType;
+  sourceId: string;
+  sourceName: string;
+  content: string;
+  heading?: string;
+  relevance: number;
+}
+
+export const contextSourcesApi = {
+  async list(projectId: string): Promise<ContextSource[]> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ContextSource[]>(response);
+  },
+
+  async create(projectId: string, input: { sourceType: ContextSourceType; name: string; config?: Record<string, unknown> }): Promise<ContextSource> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<ContextSource>(response);
+  },
+
+  async update(projectId: string, sourceId: string, updates: { name?: string; isEnabled?: boolean }): Promise<ContextSource> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources/${sourceId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates),
+    });
+    return handleResponse<ContextSource>(response);
+  },
+
+  async delete(projectId: string, sourceId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources/${sourceId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Delete failed' } }));
+      throw new ApiError(error.error?.message || 'Delete failed', 'DELETE_FAILED', response.status);
+    }
+  },
+
+  async toggle(projectId: string, sourceId: string, isEnabled: boolean): Promise<ContextSource> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources/${sourceId}/toggle`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ isEnabled }),
+    });
+    return handleResponse<ContextSource>(response);
+  },
+
+  async sync(projectId: string, sourceId: string): Promise<{ synced: number; message: string }> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources/${sourceId}/sync`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ synced: number; message: string }>(response);
+  },
+
+  async search(projectId: string, query: string, options?: { sources?: ContextSourceType[]; limit?: number }): Promise<ContextSearchResult[]> {
+    const params = new URLSearchParams({ q: query });
+    if (options?.sources) params.append('sources', options.sources.join(','));
+    if (options?.limit) params.append('limit', options.limit.toString());
+
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context-search?${params}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ContextSearchResult[]>(response);
+  },
+};

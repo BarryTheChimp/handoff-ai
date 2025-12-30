@@ -66,6 +66,8 @@ model Project {
   glossary           GlossaryTerm[]
   referenceDocuments ReferenceDocument[]
   preferencesConfig  TeamPreferencesConfig?
+  contextSources     ContextSource[]
+  contextChunks      ContextChunk[]
 
   @@map("projects")
 }
@@ -546,4 +548,74 @@ model TeamPreferencesConfig {
   project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("team_preferences_config")
+}
+
+// =============================================================================
+// CONTEXT SOURCES
+// =============================================================================
+
+enum ContextSourceType {
+  specs       // Other specs in project (automatic)
+  jira        // Jira project
+  document    // Uploaded documents
+  confluence  // Future
+  github      // Future
+}
+
+/// ContextSource - Registered context sources for a project
+model ContextSource {
+  id          String            @id @default(uuid())
+  projectId   String            @map("project_id")
+
+  // Source type and connection
+  sourceType  ContextSourceType @map("source_type")
+  name        String
+  isEnabled   Boolean           @default(true) @map("is_enabled")
+
+  // Connection details (JSON varies by type)
+  config      Json              @default("{}")
+
+  // Status
+  lastSyncAt  DateTime?         @map("last_sync_at")
+  lastError   String?           @db.Text @map("last_error")
+  itemCount   Int               @default(0) @map("item_count")
+
+  // Timestamps
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([sourceType])
+  @@map("context_sources")
+}
+
+/// ContextChunk - Searchable chunks from context sources
+model ContextChunk {
+  id          String            @id @default(uuid())
+  projectId   String            @map("project_id")
+  sourceType  ContextSourceType @map("source_type")
+  sourceId    String            @map("source_id")  // ID of spec, doc, or jira ticket
+
+  // Content
+  content     String            @db.Text
+  summary     String?           @db.Text
+  metadata    Json              @default("{}")  // Type-specific metadata
+
+  // For retrieval
+  heading     String?
+  keywords    String[]          @default([])
+
+  // Timestamps
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([sourceType])
+  @@index([sourceId])
+  @@map("context_chunks")
 }
