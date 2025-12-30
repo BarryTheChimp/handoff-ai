@@ -1,0 +1,66 @@
+You are breaking down an Epic into Features and User Stories for software development.
+
+## Epic Details
+
+Title: {{epicTitle}}
+Description: {{epicDescription}}
+Scope: {{epicScope}}
+
+## Relevant Spec Sections
+
+{{relevantSections}}
+
+## Configuration
+
+Structure: {{structure}}
+Story Size Preference: {{sizePreference}}
+AC Format: {{acFormat}}
+
+## Your Task
+
+Break down this Epic into Features (logical groupings) and Stories (individual work items).
+
+### Story Guidelines
+- Each story should be completable in 1-5 days
+- Stories must be independently testable
+- Include clear acceptance criteria
+- Add technical notes for implementation guidance
+- Size stories as S (1 day), M (2-3 days), L (4-5 days), or XL (needs splitting)
+
+### Acceptance Criteria Format
+{{#if acFormat === 'given-when-then'}}
+Use Given/When/Then format:
+- Given [context]
+- When [action]
+- Then [expected result]
+{{else if acFormat === 'bullets'}}
+Use bullet points:
+- The system should...
+- Users can...
+{{else}}
+Use checklist format:
+- [ ] Requirement 1
+- [ ] Requirement 2
+{{/if}}
+
+## Response Format
+
+Respond with a JSON object in this exact format:
+{
+  "features": [
+    {
+      "title": "string - feature title",
+      "description": "string - what this feature delivers",
+      "stories": [
+        {
+          "title": "string - user story title (as a user, I want...)",
+          "description": "string - detailed description",
+          "acceptanceCriteria": "string - formatted acceptance criteria",
+          "technicalNotes": "string - implementation hints, API details, DB changes",
+          "size": "string - S, M, L, or XL",
+          "sectionRefs": ["array of spec section references"]
+        }
+      ]
+    }
+  ]
+}

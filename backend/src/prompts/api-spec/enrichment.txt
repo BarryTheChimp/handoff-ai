@@ -1,0 +1,53 @@
+You are reviewing and enriching the generated work items for completeness and quality.
+
+## Generated Work Items
+
+{{workItems}}
+
+## Original Spec Sections
+
+{{sections}}
+
+## Your Task
+
+Review the generated work items and:
+1. Identify dependencies between stories
+2. Check if all spec sections are covered
+3. Flag any issues (stories too large, missing AC, ambiguous requirements)
+4. Suggest any missing stories
+
+## Response Format
+
+Respond with a JSON object in this exact format:
+{
+  "dependencies": [
+    {
+      "storyTitle": "string - the story that depends on another",
+      "dependsOn": "string - the story it depends on",
+      "reason": "string - why this dependency exists"
+    }
+  ],
+  "coverage": {
+    "coveredSections": ["array of section refs that are covered"],
+    "uncoveredSections": ["array of section refs that are NOT covered"],
+    "coveragePercent": "number - percentage of sections covered"
+  },
+  "issues": [
+    {
+      "storyTitle": "string - the story with an issue",
+      "issueType": "string - xl_size, missing_ac, ambiguous, duplicate, etc.",
+      "description": "string - description of the issue",
+      "suggestion": "string - how to fix it"
+    }
+  ],
+  "suggestedStories": [
+    {
+      "title": "string - suggested story title",
+      "reason": "string - why this story should be added",
+      "parentFeature": "string - which feature it belongs to",
+      "sectionRefs": ["array of section refs it would cover"]
+    }
+  ],
+  "qualityScore": "number - 1-10 rating of overall quality",
+  "summary": "string - brief summary of the enrichment analysis"
+}

@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    @apply bg-toucan-dark text-toucan-grey-100 antialiased;
+    min-height: 100vh;
+  }
+
+  code,
+  pre {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-toucan-dark;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-toucan-dark-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-toucan-grey-600;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-toucan-dark disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-toucan-orange text-white hover:bg-toucan-orange-light active:bg-toucan-orange-dark focus:ring-toucan-orange;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-toucan-grey-100 border border-toucan-dark-border hover:bg-toucan-dark-lighter focus:ring-toucan-grey-400;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-toucan-grey-400 hover:text-toucan-grey-100 hover:bg-toucan-dark-lighter focus:ring-toucan-grey-400;
+  }
+
+  .card {
+    @apply bg-toucan-dark-lighter border border-toucan-dark-border rounded-lg;
+  }
+
+  .input {
+    @apply bg-toucan-dark border border-toucan-dark-border rounded-md px-3 py-2 text-toucan-grey-100 placeholder-toucan-grey-400 focus:outline-none focus:ring-2 focus:ring-toucan-orange focus:border-transparent transition-colors duration-200;
+  }
+}

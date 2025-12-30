@@ -1,0 +1,223 @@
+// Handoff AI - Prisma Schema
+// Transforms specification documents into structured Jira tickets
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum SpecStatus {
+  uploaded
+  extracting
+  ready
+  translating
+  translated
+  error
+}
+
+enum WorkItemType {
+  epic
+  feature
+  story
+}
+
+enum WorkItemStatus {
+  draft
+  ready_for_review
+  approved
+  exported
+}
+
+enum SizeEstimate {
+  S
+  M
+  L
+  XL
+}
+
+// =============================================================================
+// ENTITIES
+// =============================================================================
+
+/// Project - Top-level container for specs and settings
+model Project {
+  id              String   @id @default(uuid())
+  name            String
+  jiraProjectKey  String?  @map("jira_project_key")
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  specs Spec[]
+
+  @@map("projects")
+}
+
+/// Spec - An uploaded specification document
+model Spec {
+  id            String     @id @default(uuid())
+  projectId     String     @map("project_id")
+  name          String
+  filePath      String     @map("file_path")
+  fileType      String     @map("file_type")
+  fileSize      Int        @map("file_size")
+  extractedText String?    @map("extracted_text") @db.Text
+  status        SpecStatus @default(uploaded)
+  specType      String     @default("api-spec") @map("spec_type")
+  uploadedBy    String     @map("uploaded_by")
+  uploadedAt    DateTime   @default(now()) @map("uploaded_at")
+  metadata      Json       @default("{}")
+  errorMessage  String?    @map("error_message")
+
+  // Relations
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sections  SpecSection[]
+  workItems WorkItem[]
+
+  @@index([projectId])
+  @@index([status])
+  @@map("specs")
+}
+
+/// SpecSection - A section/heading extracted from a spec document
+model SpecSection {
+  id         String @id @default(uuid())
+  specId     String @map("spec_id")
+  sectionRef String @map("section_ref") // e.g., "1.2.3" or "API-001"
+  heading    String
+  content    String @db.Text
+  orderIndex Int    @map("order_index")
+
+  // Relations
+  spec             Spec             @relation(fields: [specId], references: [id], onDelete: Cascade)
+  workItemSources  WorkItemSource[]
+
+  @@index([specId])
+  @@map("spec_sections")
+}
+
+/// WorkItem - An Epic, Feature, or Story generated from the spec
+model WorkItem {
+  id                 String         @id @default(uuid())
+  specId             String         @map("spec_id")
+  parentId           String?        @map("parent_id")
+  type               WorkItemType
+  title              String
+  description        String?        @db.Text
+  acceptanceCriteria String?        @map("acceptance_criteria") @db.Text
+  technicalNotes     String?        @map("technical_notes") @db.Text
+  sizeEstimate       SizeEstimate?  @map("size_estimate")
+  status             WorkItemStatus @default(draft)
+  orderIndex         Int            @map("order_index")
+  jiraKey            String?        @map("jira_key")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  // Self-referencing relation for hierarchy
+  parent   WorkItem?  @relation("WorkItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children WorkItem[] @relation("WorkItemHierarchy")
+
+  // Relations
+  spec     Spec               @relation(fields: [specId], references: [id], onDelete: Cascade)
+  sources  WorkItemSource[]
+  history  WorkItemHistory[]
+
+  @@index([specId])
+  @@index([parentId])
+  @@index([type])
+  @@index([status])
+  @@map("work_items")
+}
+
+/// WorkItemSource - Junction table linking work items to spec sections
+model WorkItemSource {
+  workItemId     String  @map("work_item_id")
+  sectionId      String  @map("section_id")
+  relevanceScore Float   @default(1.0) @map("relevance_score")
+
+  // Relations
+  workItem WorkItem    @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  section  SpecSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([workItemId, sectionId])
+  @@map("work_item_sources")
+}
+
+/// WorkItemHistory - Audit trail for work item changes
+model WorkItemHistory {
+  id           String   @id @default(uuid())
+  workItemId   String   @map("work_item_id")
+  fieldChanged String   @map("field_changed")
+  oldValue     String?  @map("old_value") @db.Text
+  newValue     String?  @map("new_value") @db.Text
+  changedBy    String   @map("changed_by")
+  changedAt    DateTime @default(now()) @map("changed_at")
+
+  // Relations
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+
+  @@index([workItemId])
+  @@index([changedAt])
+  @@map("work_item_history")
+}
+
+/// JiraConnection - Stores OAuth tokens for Jira integration (encrypted)
+model JiraConnection {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  accessToken  String   @map("access_token") @db.Text
+  refreshToken String   @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at")
+  cloudId      String   @map("cloud_id")
+  siteUrl      String?  @map("site_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("jira_connections")
+}
+
+enum ExportStatus {
+  pending
+  in_progress
+  completed
+  failed
+  cancelled
+}
+
+/// Export - Tracks a Jira export job
+model Export {
+  id              String       @id @default(uuid())
+  specId          String       @map("spec_id")
+  userId          String       @map("user_id")
+  jiraProjectKey  String       @map("jira_project_key")
+  status          ExportStatus @default(pending)
+  isDryRun        Boolean      @default(false) @map("is_dry_run")
+
+  // Progress tracking
+  totalItems      Int          @default(0) @map("total_items")
+  processedItems  Int          @default(0) @map("processed_items")
+  failedItems     Int          @default(0) @map("failed_items")
+
+  // Results
+  results         Json         @default("[]") // Array of { workItemId, jiraKey, status, error? }
+  errorMessage    String?      @map("error_message") @db.Text
+
+  // Timestamps
+  startedAt       DateTime?    @map("started_at")
+  completedAt     DateTime?    @map("completed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@index([specId])
+  @@index([userId])
+  @@index([status])
+  @@map("exports")
+}

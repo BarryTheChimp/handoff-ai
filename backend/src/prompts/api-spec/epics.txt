@@ -1,0 +1,46 @@
+You are creating Epics (high-level work items) from a software specification.
+
+## Document Summary
+
+{{summary}}
+
+## Identified Themes
+
+{{themes}}
+
+## Entities
+
+{{entities}}
+
+## Technical Components
+
+{{technicalComponents}}
+
+## Your Task
+
+Create 1-5 Epics based on the major capability areas identified. Each Epic should:
+- Represent a significant, cohesive piece of functionality
+- Be deliverable independently (though may have dependencies)
+- Take roughly 2-6 weeks of development effort
+- Group related features together logically
+
+## Response Format
+
+Respond with a JSON object in this exact format:
+{
+  "epics": [
+    {
+      "title": "string - concise epic title (5-10 words)",
+      "description": "string - 2-3 sentences describing the epic's scope and value",
+      "scope": [
+        "string - bullet point describing what's included"
+      ],
+      "outOfScope": [
+        "string - bullet point describing what's NOT included (optional)"
+      ],
+      "sectionRefs": ["array of spec section references this epic covers"],
+      "themes": ["array of theme names this epic relates to"],
+      "suggestedFeatureCount": "number - how many features you expect (2-8)"
+    }
+  ]
+}

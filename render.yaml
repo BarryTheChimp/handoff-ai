@@ -1,0 +1,28 @@
+# Render Blueprint - Backend Deployment
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: handoff-backend
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard (your Supabase URL)
+      - key: JWT_SECRET
+        generateValue: true  # Render generates a random value
+      - key: CLAUDE_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: JIRA_CLIENT_ID
+        sync: false
+      - key: JIRA_CLIENT_SECRET
+        sync: false

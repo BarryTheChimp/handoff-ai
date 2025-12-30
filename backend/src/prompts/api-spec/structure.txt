@@ -1,0 +1,54 @@
+You are analyzing a software specification document to understand its structure and identify key themes.
+
+## Document Content
+
+{{documentContent}}
+
+## Extracted Sections
+
+{{sections}}
+
+## Your Task
+
+Analyze this document and identify:
+1. The main themes or capability areas
+2. Key entities/resources mentioned
+3. Major functional areas
+4. Technical components referenced
+5. Any dependencies or integrations mentioned
+
+## Response Format
+
+Respond with a JSON object in this exact format:
+{
+  "documentType": "string - type of document (API spec, requirements doc, design doc, etc.)",
+  "summary": "string - 2-3 sentence summary of what this document describes",
+  "themes": [
+    {
+      "name": "string - theme name",
+      "description": "string - brief description",
+      "sectionRefs": ["array of section references that relate to this theme"]
+    }
+  ],
+  "entities": [
+    {
+      "name": "string - entity name (e.g., User, Order, Product)",
+      "description": "string - what this entity represents"
+    }
+  ],
+  "technicalComponents": [
+    {
+      "name": "string - component name",
+      "type": "string - API endpoint, database, service, etc.",
+      "description": "string - brief description"
+    }
+  ],
+  "integrations": [
+    {
+      "name": "string - external system or service",
+      "purpose": "string - why it's needed"
+    }
+  ],
+  "complexity": "string - low, medium, high",
+  "estimatedEpics": "number - suggested number of epics (1-5)"
+}
