@@ -1235,3 +1235,40 @@ export const contextSourcesApi = {
     return handleResponse<ContextSearchResult[]>(response);
   },
 };
+
+// =============================================================================
+// SMART CONTEXT BUILDER TYPES & API
+// =============================================================================
+
+export interface ContextSourceUsed {
+  type: 'brief' | 'glossary' | 'preferences' | 'spec' | 'jira' | 'document';
+  name: string;
+  tokensUsed: number;
+}
+
+export interface ContextBuildResult {
+  contextString: string;
+  tokensUsed: number;
+  sourcesUsed: ContextSourceUsed[];
+  tokenBudget: number;
+}
+
+export const contextBuilderApi = {
+  async preview(projectId: string, specContent: string, maxTokens?: number): Promise<ContextBuildResult> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context/preview`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ specContent, maxTokens }),
+    });
+    return handleResponse<ContextBuildResult>(response);
+  },
+
+  async build(projectId: string, specContent: string, maxTokens?: number): Promise<ContextBuildResult> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/context/build`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ specContent, maxTokens }),
+    });
+    return handleResponse<ContextBuildResult>(response);
+  },
+};

@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { DocumentType, ACFormat, Verbosity, TechnicalDepth } from '@prisma/client';
 import { getKnowledgeService, type CreateGlossaryTermInput, type UpdateGlossaryTermInput, type UpdatePreferencesConfigInput } from '../services/KnowledgeService.js';
+import { getContextBuilder } from '../services/ContextBuilder.js';
 import { storageService } from '../services/StorageService.js';
 import type { SafeUser } from '../config/users.js';
 
@@ -47,6 +48,11 @@ interface UpdateReferenceDocBody {
   name?: string;
   docType?: DocumentType;
   isActive?: boolean;
+}
+
+interface ContextPreviewBody {
+  specContent: string;
+  maxTokens?: number;
 }
 
 // =============================================================================
@@ -497,6 +503,65 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
           context,
           tokenEstimate: Math.ceil(context.length / 4), // Rough estimate
         },
+      });
+    }
+  );
+
+  // =========================================================================
+  // SMART CONTEXT BUILDER
+  // =========================================================================
+
+  // Preview context for a spec (shows what context would be injected)
+  fastify.post(
+    '/api/projects/:projectId/context/preview',
+    { preHandler: [fastify.authenticate] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
+      const body = (request.body || {}) as ContextPreviewBody;
+
+      if (!body.specContent || body.specContent.trim() === '') {
+        return reply.status(400).send({
+          error: { code: 'VALIDATION_ERROR', message: 'Spec content is required for preview' },
+        });
+      }
+
+      const contextBuilder = getContextBuilder();
+      const result = await contextBuilder.previewContext(projectId, body.specContent);
+
+      return reply.send({
+        data: {
+          contextString: result.contextString,
+          tokensUsed: result.tokensUsed,
+          sourcesUsed: result.sourcesUsed,
+          tokenBudget: body.maxTokens || 2000,
+        },
+      });
+    }
+  );
+
+  // Build full context for translation
+  fastify.post(
+    '/api/projects/:projectId/context/build',
+    { preHandler: [fastify.authenticate] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
+      const body = (request.body || {}) as ContextPreviewBody;
+
+      if (!body.specContent || body.specContent.trim() === '') {
+        return reply.status(400).send({
+          error: { code: 'VALIDATION_ERROR', message: 'Spec content is required' },
+        });
+      }
+
+      const contextBuilder = getContextBuilder();
+      const result = await contextBuilder.buildContext(
+        projectId,
+        body.specContent,
+        { maxTokens: body.maxTokens }
+      );
+
+      return reply.send({
+        data: result,
       });
     }
   );
