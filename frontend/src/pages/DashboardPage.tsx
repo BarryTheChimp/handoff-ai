@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { FileUp, RefreshCw, Files } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Spinner } from '../components/atoms/Spinner';
@@ -12,6 +12,7 @@ import { QuestionnaireModal, QuestionnaireAnswers } from '../components/organism
 import { BatchUploadModal } from '../components/organisms/BatchUploadModal';
 import { SpecFilters } from '../components/molecules/SpecFilters';
 import { specsApi, ApiError } from '../services/api';
+import { useProject } from '../hooks/useProject';
 import type { Spec } from '../types/workItem';
 
 // Poll interval for status updates (5 seconds)
@@ -27,9 +28,15 @@ interface SpecWithStats extends Spec {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { selectedProjectId, isLoading: isProjectLoading } = useProject();
   const [specs, setSpecs] = useState<SpecWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to projects page if no project selected
+  if (!isProjectLoading && !selectedProjectId) {
+    return <Navigate to="/projects" replace />;
+  }
 
   // Filters
   const [search, setSearch] = useState('');
@@ -58,8 +65,10 @@ export function DashboardPage() {
 
   // Load specs
   const loadSpecs = useCallback(async () => {
+    if (!selectedProjectId) return;
+
     try {
-      const data = await specsApi.list();
+      const data = await specsApi.list(selectedProjectId);
 
       // Load stats for translated specs
       const specsWithStats = await Promise.all(
@@ -94,7 +103,7 @@ export function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedProjectId]);
 
   // Initial load
   useEffect(() => {
@@ -151,15 +160,16 @@ export function DashboardPage() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !selectedProjectId) return;
 
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('projectId', 'default-project'); // TODO: Use actual project
+      formData.append('projectId', selectedProjectId);
 
-      const response = await fetch('/api/specs', {
+      const API_BASE = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${API_BASE}/specs`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
@@ -199,8 +209,9 @@ export function DashboardPage() {
   const processSpec = async (specId: string, answers: QuestionnaireAnswers) => {
     setIsProcessing(true);
     try {
+      const API_BASE = import.meta.env.VITE_API_URL || '/api';
       // Update spec metadata with questionnaire answers
-      await fetch(`/api/specs/${specId}/metadata`, {
+      await fetch(`${API_BASE}/specs/${specId}/metadata`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -406,15 +417,17 @@ export function DashboardPage() {
       )}
 
       {/* Batch upload modal */}
-      <BatchUploadModal
-        isOpen={showBatchUpload}
-        onClose={() => setShowBatchUpload(false)}
-        onUploadComplete={(groupId) => {
-          setShowBatchUpload(false);
-          navigate(`/spec-groups/${groupId}`);
-        }}
-        projectId="default-project"
-      />
+      {selectedProjectId && (
+        <BatchUploadModal
+          isOpen={showBatchUpload}
+          onClose={() => setShowBatchUpload(false)}
+          onUploadComplete={(groupId) => {
+            setShowBatchUpload(false);
+            navigate(`/spec-groups/${groupId}`);
+          }}
+          projectId={selectedProjectId}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { DashboardPage } from './pages/DashboardPage';
+import { ProjectsPage } from './pages/ProjectsPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { GroupStatusPage } from './pages/GroupStatusPage';
 import { TemplatesPage } from './pages/TemplatesPage';
@@ -120,6 +121,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
         <Route path="/review/:specId" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
         <Route path="/spec-groups/:groupId" element={<ProtectedRoute><GroupStatusPage /></ProtectedRoute>} />
         <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />

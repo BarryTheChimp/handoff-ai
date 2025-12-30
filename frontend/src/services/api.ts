@@ -870,3 +870,80 @@ export const preferencesApi = {
     return handleResponse<{ extracted: number; preferences: ExtractedPreference[] }>(response);
   },
 };
+
+// Project Types
+export interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  jiraProjectKey: string | null;
+  specCount: number;
+  workItemCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectDetails extends Project {
+  specs: Array<{
+    id: string;
+    name: string;
+    status: string;
+    uploadedAt: string;
+  }>;
+}
+
+export interface CreateProjectInput {
+  name: string;
+  description?: string;
+  jiraProjectKey?: string;
+}
+
+// Projects API
+export const projectsApi = {
+  async list(): Promise<Project[]> {
+    const response = await fetch(`${API_BASE}/projects`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Project[]>(response);
+  },
+
+  async get(id: string): Promise<ProjectDetails> {
+    const response = await fetch(`${API_BASE}/projects/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ProjectDetails>(response);
+  },
+
+  async create(input: CreateProjectInput): Promise<Project> {
+    const response = await fetch(`${API_BASE}/projects`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<Project>(response);
+  },
+
+  async update(id: string, input: Partial<CreateProjectInput>): Promise<Project> {
+    const response = await fetch(`${API_BASE}/projects/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<Project>(response);
+  },
+
+  async delete(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/projects/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Delete failed', code: 'UNKNOWN' } }));
+      throw new ApiError(
+        error.error?.message || 'Delete failed',
+        error.error?.code || 'UNKNOWN',
+        response.status
+      );
+    }
+  },
+};

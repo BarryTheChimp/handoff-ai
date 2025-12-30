@@ -1,0 +1,2 @@
+-- Add description field to projects table
+ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "description" TEXT;

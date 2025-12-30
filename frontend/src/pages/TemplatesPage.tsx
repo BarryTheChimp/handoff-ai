@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Plus,
@@ -21,6 +21,7 @@ import {
   type CustomFieldDefinition,
   type CreateTemplateInput,
 } from '../services/api';
+import { useProject } from '../hooks/useProject';
 import { clsx } from 'clsx';
 
 const AC_FORMATS: { value: ACFormat; label: string; icon: typeof FileText; description: string }[] = [
@@ -53,11 +54,18 @@ const DEFAULT_FORM: TemplateFormState = {
 
 export function TemplatesPage() {
   const navigate = useNavigate();
-  const projectId = 'default-project';
+  const { selectedProjectId, isLoading: isProjectLoading } = useProject();
 
   const [templates, setTemplates] = useState<StoryTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to projects page if no project selected
+  if (!isProjectLoading && !selectedProjectId) {
+    return <Navigate to="/projects" replace />;
+  }
+
+  const projectId = selectedProjectId || '';
 
   // Form state
   const [showForm, setShowForm] = useState(false);
