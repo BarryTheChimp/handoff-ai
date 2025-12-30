@@ -1,8 +1,62 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReviewPage } from './pages/ReviewPage';
 
+// Check if user is logged in
+function isAuthenticated(): boolean {
+  return localStorage.getItem('auth_token') !== null;
+}
+
+// Protected route wrapper - redirects to login if not authenticated
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 function LoginPage() {
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const navigate = useNavigate();
+
+  // If already logged in, redirect to dashboard
+  React.useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Login failed');
+      }
+
+      localStorage.setItem('auth_token', data.data.token);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">
       <div className="card p-8 max-w-md w-full">
@@ -12,13 +66,20 @@ function LoginPage() {
         <p className="text-toucan-grey-400 text-center mb-6">
           Sign in to continue
         </p>
-        <form className="space-y-4">
+        {error && (
+          <div className="bg-toucan-error/20 border border-toucan-error text-toucan-error px-4 py-2 rounded-md mb-4 text-sm">
+            {error}
+          </div>
+        )}
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-toucan-grey-200 mb-1">
               Username
             </label>
             <input
               type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full bg-toucan-dark border border-toucan-dark-border rounded-md px-3 py-2 text-toucan-grey-100 placeholder-toucan-grey-400 focus:outline-none focus:ring-2 focus:ring-toucan-orange"
               placeholder="admin"
             />
@@ -29,15 +90,18 @@ function LoginPage() {
             </label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-toucan-dark border border-toucan-dark-border rounded-md px-3 py-2 text-toucan-grey-100 placeholder-toucan-grey-400 focus:outline-none focus:ring-2 focus:ring-toucan-orange"
               placeholder="••••••••"
             />
           </div>
           <button
             type="submit"
-            className="w-full btn btn-primary py-2.5"
+            disabled={loading}
+            className="w-full btn btn-primary py-2.5 disabled:opacity-50"
           >
-            Sign In
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       </div>
@@ -49,9 +113,9 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<DashboardPage />} />
+        <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/review/:specId" element={<ReviewPage />} />
+        <Route path="/review/:specId" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
