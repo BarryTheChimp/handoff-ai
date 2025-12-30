@@ -1,6 +1,7 @@
 import type { Spec, WorkItem } from '../types/workItem';
 
-const API_BASE = '/api';
+// Use environment variable for API base URL, fallback to relative path for local dev
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // Get auth token from localStorage
 function getAuthHeaders(): HeadersInit {
