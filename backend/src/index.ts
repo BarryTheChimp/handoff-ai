@@ -20,6 +20,7 @@ import { coverageRoutes } from './routes/coverage.js';
 import { feedbackRoutes } from './routes/feedback.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
 import { contextSourceRoutes } from './routes/context-sources.js';
+import { learningRoutes } from './routes/learning.js';
 
 // Extend Fastify with authenticate decorator
 declare module 'fastify' {
@@ -108,6 +109,7 @@ async function buildApp() {
   await fastify.register(feedbackRoutes);
   await fastify.register(knowledgeRoutes);
   await fastify.register(contextSourceRoutes);
+  await fastify.register(learningRoutes);
 
   // Health check endpoint
   fastify.get('/', async (_request, _reply) => {

@@ -1272,3 +1272,115 @@ export const contextBuilderApi = {
     return handleResponse<ContextBuildResult>(response);
   },
 };
+
+// =============================================================================
+// LEARNING LOOP TYPES & API
+// =============================================================================
+
+export type EditField = 'title' | 'description' | 'acceptanceCriteria' | 'technicalNotes' | 'size' | 'priority';
+export type EditType = 'addition' | 'removal' | 'modification' | 'complete';
+export type SuggestionType = 'addToPreferences' | 'addToGlossary' | 'updateTemplate' | 'addRequiredSection';
+export type PatternStatus = 'pending' | 'suggested' | 'accepted' | 'dismissed' | 'applied';
+
+export interface StoryEdit {
+  id: string;
+  projectId: string;
+  workItemId: string;
+  field: EditField;
+  beforeValue: string;
+  afterValue: string;
+  editType: EditType;
+  specId: string;
+  userId: string;
+  createdAt: string;
+}
+
+export interface LearnedPattern {
+  id: string;
+  projectId: string;
+  pattern: string;
+  description: string;
+  confidence: number;
+  occurrences: number;
+  field: EditField;
+  context: string | null;
+  suggestion: string;
+  suggestionType: SuggestionType;
+  status: PatternStatus;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  appliedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningStats {
+  totalEdits: number;
+  editsThisWeek: number;
+  patternsDetected: number;
+  patternsApplied: number;
+  topEditedFields: Array<{ field: string; count: number }>;
+}
+
+export const learningApi = {
+  // Track an edit
+  async trackEdit(workItemId: string, field: EditField, beforeValue: string, afterValue: string): Promise<StoryEdit> {
+    const response = await fetch(`${API_BASE}/workitems/${workItemId}/edits`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ field, beforeValue, afterValue }),
+    });
+    return handleResponse<StoryEdit>(response);
+  },
+
+  // Get edits for a work item
+  async getEditsForWorkItem(workItemId: string): Promise<StoryEdit[]> {
+    const response = await fetch(`${API_BASE}/workitems/${workItemId}/edits`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<StoryEdit[]>(response);
+  },
+
+  // Get pending patterns for a project
+  async getPendingPatterns(projectId: string): Promise<LearnedPattern[]> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/learning/patterns`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<LearnedPattern[]>(response);
+  },
+
+  // Accept a pattern
+  async acceptPattern(projectId: string, patternId: string): Promise<LearnedPattern> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/learning/patterns/${patternId}/accept`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<LearnedPattern>(response);
+  },
+
+  // Dismiss a pattern
+  async dismissPattern(projectId: string, patternId: string): Promise<LearnedPattern> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/learning/patterns/${patternId}/dismiss`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<LearnedPattern>(response);
+  },
+
+  // Get learning stats
+  async getStats(projectId: string): Promise<LearningStats> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/learning/stats`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<LearningStats>(response);
+  },
+
+  // Trigger pattern detection
+  async detectPatterns(projectId: string): Promise<{ detected: number }> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/learning/detect`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ detected: number }>(response);
+  },
+};

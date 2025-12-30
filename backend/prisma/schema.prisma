@@ -68,6 +68,8 @@ model Project {
   preferencesConfig  TeamPreferencesConfig?
   contextSources     ContextSource[]
   contextChunks      ContextChunk[]
+  storyEdits         StoryEdit[]
+  learnedPatterns    LearnedPattern[]
 
   @@map("projects")
 }
@@ -148,6 +150,7 @@ model WorkItem {
   sources  WorkItemSource[]
   history  WorkItemHistory[]
   feedback AIFeedback[]
+  edits    StoryEdit[]
 
   @@index([specId])
   @@index([parentId])
@@ -618,4 +621,105 @@ model ContextChunk {
   @@index([sourceType])
   @@index([sourceId])
   @@map("context_chunks")
+}
+
+// =============================================================================
+// LEARNING LOOP
+// =============================================================================
+
+enum EditField {
+  title
+  description
+  acceptanceCriteria
+  technicalNotes
+  size
+  priority
+}
+
+enum EditType {
+  addition     // Content added
+  removal      // Content removed
+  modification // Content changed
+  complete     // Entire field rewritten
+}
+
+enum SuggestionType {
+  addToPreferences    // Add to custom preferences
+  addToGlossary       // Add term to glossary
+  updateTemplate      // Update story template
+  addRequiredSection  // Always include this section
+}
+
+enum PatternStatus {
+  pending    // Detected, not reviewed
+  suggested  // Shown to user
+  accepted   // User accepted
+  dismissed  // User dismissed
+  applied    // Applied to preferences
+}
+
+/// StoryEdit - Tracks changes made to generated stories
+model StoryEdit {
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  workItemId  String    @map("work_item_id")
+
+  // What changed
+  field       EditField
+  beforeValue String    @db.Text @map("before_value")
+  afterValue  String    @db.Text @map("after_value")
+
+  // Context
+  editType    EditType  @map("edit_type")
+  specId      String    @map("spec_id")
+  userId      String    @map("user_id")
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workItem    WorkItem  @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([workItemId])
+  @@index([field])
+  @@map("story_edits")
+}
+
+/// LearnedPattern - Patterns detected from edits
+model LearnedPattern {
+  id             String         @id @default(uuid())
+  projectId      String         @map("project_id")
+
+  // Pattern details
+  pattern        String         @db.Text
+  description    String         @db.Text
+  confidence     Float          // 0-1
+  occurrences    Int            @default(1)
+
+  // What triggered it
+  field          EditField
+  context        String?        // e.g., "API stories", "authentication"
+
+  // Suggested action
+  suggestion     String         @db.Text
+  suggestionType SuggestionType @map("suggestion_type")
+
+  // Status
+  status         PatternStatus  @default(pending)
+  reviewedAt     DateTime?      @map("reviewed_at")
+  reviewedBy     String?        @map("reviewed_by")
+  appliedAt      DateTime?      @map("applied_at")
+
+  // Timestamps
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@map("learned_patterns")
 }
