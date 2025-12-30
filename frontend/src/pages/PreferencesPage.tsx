@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   Lightbulb,
   Plus,
   Wand2,
@@ -15,6 +14,8 @@ import {
 import { clsx } from 'clsx';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
+import { Header } from '../components/organisms/Header';
+import { Navigation } from '../components/organisms/Navigation';
 import { TeachHandoffModal } from '../components/organisms/TeachHandoffModal';
 import { preferencesApi, type TeamPreference, type ExtractedPreference } from '../services/api';
 
@@ -141,54 +142,39 @@ export function PreferencesPage() {
 
   return (
     <div className="min-h-screen bg-toucan-dark">
-      {/* Header */}
-      <header className="border-b border-toucan-dark-border bg-toucan-dark-lighter">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <Button variant="ghost" size="sm" leftIcon={<ArrowLeft size={16} />}>
-                  Back
-                </Button>
-              </Link>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-toucan-orange/20 rounded-lg flex items-center justify-center">
-                  <Lightbulb size={20} className="text-toucan-orange" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-toucan-grey-100">Team Preferences</h1>
-                  <p className="text-sm text-toucan-grey-400">
-                    Teach Handoff how your team likes stories written
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleExtract}
-                disabled={isExtracting}
-                leftIcon={isExtracting ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
-              >
-                {isExtracting ? 'Extracting...' : 'Extract from Feedback'}
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowAddModal(true)}
-                leftIcon={<Plus size={16} />}
-              >
-                Add Preference
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
+      <Navigation />
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-semibold text-toucan-grey-100">Team Preferences</h1>
+            <p className="text-sm text-toucan-grey-400 mt-1">
+              Teach Handoff how your team likes stories written
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExtract}
+              disabled={isExtracting}
+              leftIcon={isExtracting ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+            >
+              {isExtracting ? 'Extracting...' : 'Extract from Feedback'}
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setShowAddModal(true)}
+              leftIcon={<Plus size={16} />}
+            >
+              Add Preference
+            </Button>
+          </div>
+        </div>
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={32} className="animate-spin text-toucan-orange" />

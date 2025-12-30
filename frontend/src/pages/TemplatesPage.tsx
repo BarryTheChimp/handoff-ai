@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   Plus,
   Star,
   Edit,
@@ -14,6 +13,8 @@ import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { Modal } from '../components/atoms/Modal';
 import { Spinner } from '../components/atoms/Spinner';
+import { Header } from '../components/organisms/Header';
+import { Navigation } from '../components/organisms/Navigation';
 import {
   templatesApi,
   type StoryTemplate,
@@ -53,7 +54,6 @@ const DEFAULT_FORM: TemplateFormState = {
 };
 
 export function TemplatesPage() {
-  const navigate = useNavigate();
   const { selectedProjectId, isLoading: isProjectLoading } = useProject();
 
   const [templates, setTemplates] = useState<StoryTemplate[]>([]);
@@ -216,31 +216,22 @@ export function TemplatesPage() {
 
   return (
     <div className="min-h-screen bg-toucan-dark">
-      {/* Header */}
-      <header className="border-b border-toucan-dark-border bg-toucan-dark-lighter">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/')}
-                className="p-2 text-toucan-grey-400 hover:text-toucan-grey-100 hover:bg-toucan-dark rounded-md transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-lg font-semibold text-toucan-grey-100">Story Templates</h1>
-            </div>
-            <Button
-              data-testid="create-template-button"
-              variant="primary"
-              onClick={openCreateForm}
-            >
-              <Plus size={16} className="mr-1.5" /> Create Template
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header />
+      <Navigation />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-semibold text-toucan-grey-100">Story Templates</h1>
+          <Button
+            data-testid="create-template-button"
+            variant="primary"
+            onClick={openCreateForm}
+            leftIcon={<Plus size={16} />}
+          >
+            Create Template
+          </Button>
+        </div>
         {error && (
           <div className="mb-6 p-4 bg-toucan-error/20 border border-toucan-error rounded-lg text-toucan-error">
             {error}

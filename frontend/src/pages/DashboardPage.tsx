@@ -4,6 +4,7 @@ import { FileUp, RefreshCw, Files } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Spinner } from '../components/atoms/Spinner';
 import { Header } from '../components/organisms/Header';
+import { Navigation } from '../components/organisms/Navigation';
 import { SpecCard } from '../components/organisms/SpecCard';
 import { EmptyState } from '../components/organisms/EmptyState';
 import { DeleteConfirmModal } from '../components/organisms/DeleteConfirmModal';
@@ -273,6 +274,7 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen bg-toucan-dark">
       <Header />
+      <Navigation />
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
