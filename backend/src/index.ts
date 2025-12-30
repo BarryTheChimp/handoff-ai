@@ -11,6 +11,13 @@ import { projectsRoutes } from './routes/projects.js';
 import { workitemsRoutes } from './routes/workitems.js';
 import { historyRoutes } from './routes/history.js';
 import { jiraRoutes } from './routes/jira.js';
+import { specGroupRoutes } from './routes/specGroups.js';
+import { bulkRoutes } from './routes/bulk.js';
+import { templateRoutes } from './routes/templates.js';
+import { dependencyRoutes } from './routes/dependencies.js';
+import { estimateRoutes } from './routes/estimates.js';
+import { coverageRoutes } from './routes/coverage.js';
+import { feedbackRoutes } from './routes/feedback.js';
 
 // Extend Fastify with authenticate decorator
 declare module 'fastify' {
@@ -90,6 +97,13 @@ async function buildApp() {
   await fastify.register(workitemsRoutes);
   await fastify.register(historyRoutes);
   await fastify.register(jiraRoutes);
+  await fastify.register(specGroupRoutes);
+  await fastify.register(bulkRoutes);
+  await fastify.register(templateRoutes);
+  await fastify.register(dependencyRoutes);
+  await fastify.register(estimateRoutes);
+  await fastify.register(coverageRoutes);
+  await fastify.register(feedbackRoutes);
 
   // Health check endpoint
   fastify.get('/', async (_request, _reply) => {

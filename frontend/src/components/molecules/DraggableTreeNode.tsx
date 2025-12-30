@@ -8,8 +8,10 @@ import {
   FolderOpen,
   FileText,
   GripVertical,
+  Check,
 } from 'lucide-react';
 import { StatusBadge, SizeBadge } from '../atoms/Badge';
+import { useSelectionStore } from '../../stores/selectionStore';
 import type { WorkItem, WorkItemType } from '../../types/workItem';
 
 interface DraggableTreeNodeProps {
@@ -20,6 +22,7 @@ interface DraggableTreeNodeProps {
   hasChildren: boolean;
   isOver?: boolean;
   isOverValid?: boolean;
+  allItemIds?: string[];
   onToggleExpand: () => void;
   onSelect: () => void;
 }
@@ -38,6 +41,7 @@ export function DraggableTreeNode({
   hasChildren,
   isOver,
   isOverValid,
+  allItemIds = [],
   onToggleExpand,
   onSelect,
 }: DraggableTreeNodeProps) {
@@ -57,6 +61,14 @@ export function DraggableTreeNode({
     },
   });
 
+  const {
+    selectedIds,
+    lastSelectedId,
+    toggleItem,
+    selectRange,
+    isSelected: isMultiSelected,
+  } = useSelectionStore();
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -66,6 +78,8 @@ export function DraggableTreeNode({
     ? typeIcons[item.type].open
     : typeIcons[item.type].closed;
 
+  const isItemMultiSelected = isMultiSelected(item.id);
+
   const handleChevronClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (hasChildren) {
@@ -73,14 +87,37 @@ export function DraggableTreeNode({
     }
   };
 
-  const handleNodeClick = () => {
-    onSelect();
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (e.shiftKey && lastSelectedId && allItemIds.length > 0) {
+      selectRange(lastSelectedId, item.id, allItemIds);
+    } else {
+      toggleItem(item.id);
+    }
+  };
+
+  const handleNodeClick = (e: React.MouseEvent) => {
+    if (e.shiftKey && selectedIds.size > 0 && allItemIds.length > 0) {
+      // Shift-click for range selection
+      if (lastSelectedId) {
+        selectRange(lastSelectedId, item.id, allItemIds);
+      }
+    } else if (e.ctrlKey || e.metaKey) {
+      // Ctrl/Cmd-click for multi-select
+      toggleItem(item.id);
+    } else {
+      onSelect();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSelect();
+      if (e.shiftKey && selectedIds.size > 0) {
+        toggleItem(item.id);
+      } else {
+        onSelect();
+      }
     }
     if (e.key === 'ArrowRight' && hasChildren && !isExpanded) {
       e.preventDefault();
@@ -95,10 +132,11 @@ export function DraggableTreeNode({
   return (
     <div
       ref={setNodeRef}
+      data-testid="tree-node"
       style={{ ...style, paddingLeft: `${depth * 20 + 8}px` }}
       role="treeitem"
       aria-expanded={hasChildren ? isExpanded : undefined}
-      aria-selected={isSelected}
+      aria-selected={isSelected || isItemMultiSelected}
       tabIndex={0}
       onClick={handleNodeClick}
       onKeyDown={handleKeyDown}
@@ -111,12 +149,33 @@ export function DraggableTreeNode({
         // Drop target states
         isOver && isOverValid && 'ring-2 ring-toucan-success bg-toucan-success/10',
         isOver && !isOverValid && 'ring-2 ring-toucan-error bg-toucan-error/10',
-        // Selection states
-        !isDragging && !isOver && isSelected
+        // Multi-selection state
+        !isDragging && !isOver && isItemMultiSelected
           ? 'bg-toucan-orange/20 border-l-2 border-toucan-orange'
-          : !isDragging && !isOver && 'hover:bg-toucan-dark-lighter border-l-2 border-transparent'
+          : // Single selection state
+            !isDragging && !isOver && isSelected
+            ? 'bg-toucan-orange/10 border-l-2 border-toucan-orange/50'
+            : !isDragging && !isOver && 'hover:bg-toucan-dark-lighter border-l-2 border-transparent'
       )}
     >
+      {/* Selection checkbox */}
+      <button
+        data-testid="selection-checkbox"
+        onClick={handleCheckboxClick}
+        className={clsx(
+          'w-4 h-4 rounded border flex items-center justify-center transition-all',
+          'opacity-0 group-hover:opacity-100',
+          isItemMultiSelected && 'opacity-100',
+          isItemMultiSelected
+            ? 'bg-toucan-orange border-toucan-orange'
+            : 'border-toucan-dark-border hover:border-toucan-grey-400'
+        )}
+        tabIndex={-1}
+        aria-label={isItemMultiSelected ? 'Deselect' : 'Select'}
+      >
+        {isItemMultiSelected && <Check size={12} className="text-white" />}
+      </button>
+
       {/* Drag handle */}
       <div
         {...attributes}

@@ -2,6 +2,11 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReviewPage } from './pages/ReviewPage';
+import { GroupStatusPage } from './pages/GroupStatusPage';
+import { TemplatesPage } from './pages/TemplatesPage';
+import { DependencyGraphPage } from './pages/DependencyGraphPage';
+import { CoveragePage } from './pages/CoveragePage';
+import { PreferencesPage } from './pages/PreferencesPage';
 
 // Check if user is logged in
 function isAuthenticated(): boolean {
@@ -116,6 +121,11 @@ export function App() {
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/review/:specId" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
+        <Route path="/spec-groups/:groupId" element={<ProtectedRoute><GroupStatusPage /></ProtectedRoute>} />
+        <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
+        <Route path="/dependencies/:specId" element={<ProtectedRoute><DependencyGraphPage /></ProtectedRoute>} />
+        <Route path="/coverage/:specId" element={<ProtectedRoute><CoveragePage /></ProtectedRoute>} />
+        <Route path="/preferences/:projectId" element={<ProtectedRoute><PreferencesPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

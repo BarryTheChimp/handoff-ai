@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReviewLayout } from '../components/templates/ReviewLayout';
 import { ExportModal } from '../components/organisms/ExportModal';
+import { BulkActionBar } from '../components/organisms/BulkActionBar';
 import { LoadingOverlay } from '../components/atoms/Spinner';
 import { useTreeStore } from '../stores/treeStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { specsApi, ApiError } from '../services/api';
 import type { Spec } from '../types/workItem';
 
@@ -17,41 +19,50 @@ export function ReviewPage() {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const setItems = useTreeStore((state) => state.setItems);
+  const clearSelection = useSelectionStore((state) => state.clearSelection);
+
+  // Load data function
+  const loadData = useCallback(async () => {
+    if (!specId) {
+      setError('No spec ID provided');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setError(null);
+
+      // Fetch spec and work items in parallel
+      const [specData, workItemsData] = await Promise.all([
+        specsApi.get(specId),
+        specsApi.getWorkItems(specId).catch(() => ({ flat: [], hierarchical: [] })),
+      ]);
+
+      setSpec(specData);
+      setItems(workItemsData.flat, workItemsData.hierarchical);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load spec');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [specId, setItems]);
 
   // Fetch spec and work items on mount
   useEffect(() => {
-    async function loadData() {
-      if (!specId) {
-        setError('No spec ID provided');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch spec and work items in parallel
-        const [specData, workItemsData] = await Promise.all([
-          specsApi.get(specId),
-          specsApi.getWorkItems(specId).catch(() => ({ flat: [], hierarchical: [] })),
-        ]);
-
-        setSpec(specData);
-        setItems(workItemsData.flat, workItemsData.hierarchical);
-      } catch (err) {
-        if (err instanceof ApiError) {
-          setError(err.message);
-        } else {
-          setError('Failed to load spec');
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
+    setLoading(true);
     loadData();
-  }, [specId, setItems]);
+  }, [loadData]);
+
+  // Clear selection on unmount
+  useEffect(() => {
+    return () => {
+      clearSelection();
+    };
+  }, [clearSelection]);
 
   const handleBack = () => {
     navigate('/');
@@ -100,6 +111,8 @@ export function ReviewPage() {
         specId={spec.id}
         specName={spec.name}
       />
+
+      <BulkActionBar onOperationComplete={loadData} />
     </>
   );
 }

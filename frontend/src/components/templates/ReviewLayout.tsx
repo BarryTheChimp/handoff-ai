@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
 import { clsx } from 'clsx';
@@ -12,13 +13,19 @@ import {
   Minimize2,
   Undo2,
   Redo2,
+  GitBranch,
+  Wand2,
+  PieChart,
+  Lightbulb,
 } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { DraggableWorkBreakdownTree } from '../organisms/DraggableWorkBreakdownTree';
 import { StoryEditor } from '../organisms/StoryEditor';
+import { BatchEstimateModal } from '../organisms/BatchEstimateModal';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
-import type { Spec } from '../../types/workItem';
+import { useTreeStore } from '../../stores/treeStore';
+import type { Spec, WorkItem } from '../../types/workItem';
 
 interface ReviewLayoutProps {
   spec: Spec;
@@ -62,6 +69,12 @@ export function ReviewLayout({ spec, onBack, onExport }: ReviewLayoutProps) {
   const [activeTab, setActiveTab] = useState<TabType>(() => loadLayoutPrefs().tab);
   const [sizes, setSizes] = useState<number[]>(() => loadLayoutPrefs().sizes);
   const [treeCollapsed, setTreeCollapsed] = useState(false);
+  const [showBatchEstimate, setShowBatchEstimate] = useState(false);
+
+  // Get work items for estimation stats
+  const items = useTreeStore((state) => state.items);
+  const stories = items.filter((item: WorkItem) => item.type === 'story');
+  const storiesWithEstimates = stories.filter((item: WorkItem) => item.sizeEstimate);
 
   // Undo/Redo functionality
   const handleRefresh = useCallback(() => {
@@ -131,6 +144,48 @@ export function ReviewLayout({ spec, onBack, onExport }: ReviewLayoutProps) {
               <Redo2 size={16} />
             </Button>
           </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowBatchEstimate(true)}
+            leftIcon={<Wand2 size={16} />}
+            disabled={spec.status !== 'translated' || stories.length === 0}
+          >
+            Estimate All
+          </Button>
+
+          <Link to={`/dependencies/${spec.id}`}>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<GitBranch size={16} />}
+              disabled={spec.status !== 'translated'}
+            >
+              Dependencies
+            </Button>
+          </Link>
+
+          <Link to={`/coverage/${spec.id}`}>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<PieChart size={16} />}
+              disabled={spec.status !== 'translated'}
+            >
+              Coverage
+            </Button>
+          </Link>
+
+          <Link to={`/preferences/${spec.projectId}`}>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Lightbulb size={16} />}
+            >
+              Preferences
+            </Button>
+          </Link>
 
           <Button
             variant="primary"
@@ -218,7 +273,7 @@ export function ReviewLayout({ spec, onBack, onExport }: ReviewLayoutProps) {
               {/* Tab content */}
               <div className="flex-1 overflow-hidden">
                 {activeTab === 'editor' ? (
-                  <StoryEditor className="h-full" />
+                  <StoryEditor className="h-full" projectId={spec.projectId} />
                 ) : (
                   <SpecViewer spec={spec} />
                 )}
@@ -242,6 +297,19 @@ export function ReviewLayout({ spec, onBack, onExport }: ReviewLayoutProps) {
           </Button>
         </div>
       </footer>
+
+      {/* Batch Estimate Modal */}
+      <BatchEstimateModal
+        isOpen={showBatchEstimate}
+        onClose={() => setShowBatchEstimate(false)}
+        specId={spec.id}
+        existingEstimatesCount={storiesWithEstimates.length}
+        totalStoriesCount={stories.length}
+        onComplete={() => {
+          // Refresh work items to get updated estimates
+          handleRefresh();
+        }}
+      />
     </div>
   );
 }

@@ -57,7 +57,10 @@ model Project {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  specs Spec[]
+  specs       Spec[]
+  specGroups  SpecGroup[]
+  templates   StoryTemplate[]
+  preferences TeamPreference[]
 
   @@map("projects")
 }
@@ -66,6 +69,7 @@ model Project {
 model Spec {
   id            String     @id @default(uuid())
   projectId     String     @map("project_id")
+  specGroupId   String?    @map("spec_group_id")
   name          String
   filePath      String     @map("file_path")
   fileType      String     @map("file_type")
@@ -80,22 +84,25 @@ model Spec {
 
   // Relations
   project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  specGroup SpecGroup?    @relation(fields: [specGroupId], references: [id], onDelete: SetNull)
   sections  SpecSection[]
   workItems WorkItem[]
 
   @@index([projectId])
+  @@index([specGroupId])
   @@index([status])
   @@map("specs")
 }
 
 /// SpecSection - A section/heading extracted from a spec document
 model SpecSection {
-  id         String @id @default(uuid())
-  specId     String @map("spec_id")
-  sectionRef String @map("section_ref") // e.g., "1.2.3" or "API-001"
-  heading    String
-  content    String @db.Text
-  orderIndex Int    @map("order_index")
+  id                     String  @id @default(uuid())
+  specId                 String  @map("spec_id")
+  sectionRef             String  @map("section_ref") // e.g., "1.2.3" or "API-001"
+  heading                String
+  content                String  @db.Text
+  orderIndex             Int     @map("order_index")
+  intentionallyUncovered Boolean @default(false) @map("intentionally_uncovered")
 
   // Relations
   spec             Spec             @relation(fields: [specId], references: [id], onDelete: Cascade)
@@ -119,6 +126,9 @@ model WorkItem {
   status             WorkItemStatus @default(draft)
   orderIndex         Int            @map("order_index")
   jiraKey            String?        @map("jira_key")
+  templateId         String?        @map("template_id")
+  customFields       Json           @default("{}") @map("custom_fields")
+  dependsOnIds       String[]       @default([]) @map("depends_on_ids")
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
 
@@ -130,6 +140,7 @@ model WorkItem {
   spec     Spec               @relation(fields: [specId], references: [id], onDelete: Cascade)
   sources  WorkItemSource[]
   history  WorkItemHistory[]
+  feedback AIFeedback[]
 
   @@index([specId])
   @@index([parentId])
@@ -193,6 +204,66 @@ enum ExportStatus {
   cancelled
 }
 
+// =============================================================================
+// SPEC GROUPS (Multi-File Upload)
+// =============================================================================
+
+enum SpecGroupStatus {
+  pending
+  analyzing
+  conflicts_detected
+  ready
+  error
+}
+
+/// SpecGroup - A collection of related spec documents
+model SpecGroup {
+  id              String          @id @default(uuid())
+  projectId       String          @map("project_id")
+  name            String
+  primarySpecId   String?         @map("primary_spec_id")
+  stitchedContext String?         @db.Text @map("stitched_context")
+  status          SpecGroupStatus @default(pending)
+  errorMessage    String?         @db.Text @map("error_message")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  specs     Spec[]
+  conflicts SpecConflict[]
+
+  @@index([projectId])
+  @@index([status])
+  @@map("spec_groups")
+}
+
+/// SpecConflict - A detected conflict between specs in a group
+model SpecConflict {
+  id           String    @id @default(uuid())
+  specGroupId  String    @map("spec_group_id")
+  spec1Id      String    @map("spec1_id")
+  spec1Section String    @map("spec1_section")
+  spec1Text    String    @db.Text @map("spec1_text")
+  spec2Id      String    @map("spec2_id")
+  spec2Section String    @map("spec2_section")
+  spec2Text    String    @db.Text @map("spec2_text")
+  conflictType String    @map("conflict_type")
+  severity     String    @default("warning")
+  description  String    @db.Text
+  resolution   String?
+  mergedText   String?   @db.Text @map("merged_text")
+  resolvedBy   String?   @map("resolved_by")
+  resolvedAt   DateTime? @map("resolved_at")
+
+  // Relations
+  specGroup SpecGroup @relation(fields: [specGroupId], references: [id], onDelete: Cascade)
+
+  @@index([specGroupId])
+  @@index([resolution])
+  @@map("spec_conflicts")
+}
+
 /// Export - Tracks a Jira export job
 model Export {
   id              String       @id @default(uuid())
@@ -220,4 +291,93 @@ model Export {
   @@index([userId])
   @@index([status])
   @@map("exports")
+}
+
+// =============================================================================
+// BULK OPERATIONS
+// =============================================================================
+
+/// BulkOperation - Stores bulk operation data for undo functionality
+model BulkOperation {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  specId         String   @map("spec_id")
+  operation      String   // 'update_fields' | 'ai_enhance'
+  itemIds        String[] @map("item_ids")
+  payload        Json     // What was applied
+  previousValues Json     @map("previous_values") // For undo
+  createdAt      DateTime @default(now()) @map("created_at")
+  expiresAt      DateTime @map("expires_at")
+
+  @@index([userId])
+  @@index([specId])
+  @@index([expiresAt])
+  @@map("bulk_operations")
+}
+
+// =============================================================================
+// STORY TEMPLATES
+// =============================================================================
+
+/// StoryTemplate - Template for generating stories with specific format
+model StoryTemplate {
+  id               String   @id @default(uuid())
+  projectId        String   @map("project_id")
+  name             String
+  isDefault        Boolean  @default(false) @map("is_default")
+  acFormat         String   @default("bullets") @map("ac_format") // 'gherkin', 'bullets', 'checklist'
+  requiredSections String[] @default([]) @map("required_sections")
+  customFields     Json     @default("[]") @map("custom_fields")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("story_templates")
+}
+
+// =============================================================================
+// AI FEEDBACK & LEARNING
+// =============================================================================
+
+/// AIFeedback - User feedback on AI-generated work items
+model AIFeedback {
+  id          String   @id @default(uuid())
+  workItemId  String   @map("work_item_id")
+  userId      String   @map("user_id")
+  rating      Int      // 1 (thumbs down) or 5 (thumbs up)
+  feedback    String?  @db.Text
+  categories  String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+
+  @@unique([workItemId, userId])
+  @@index([workItemId])
+  @@index([userId])
+  @@map("ai_feedback")
+}
+
+/// TeamPreference - Learned or manual preferences for AI generation
+model TeamPreference {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  preference  String   @db.Text
+  description String?  @db.Text
+  category    String?
+  learnedFrom String[] @default([]) @map("learned_from")
+  active      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([active])
+  @@map("team_preferences")
 }

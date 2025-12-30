@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileUp, RefreshCw } from 'lucide-react';
+import { FileUp, RefreshCw, Files } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Spinner } from '../components/atoms/Spinner';
 import { SpecCard } from '../components/organisms/SpecCard';
@@ -8,6 +8,7 @@ import { EmptyState } from '../components/organisms/EmptyState';
 import { DeleteConfirmModal } from '../components/organisms/DeleteConfirmModal';
 import { ExportModal } from '../components/organisms/ExportModal';
 import { QuestionnaireModal, QuestionnaireAnswers } from '../components/organisms/QuestionnaireModal';
+import { BatchUploadModal } from '../components/organisms/BatchUploadModal';
 import { SpecFilters } from '../components/molecules/SpecFilters';
 import { specsApi, ApiError } from '../services/api';
 import type { Spec } from '../types/workItem';
@@ -47,6 +48,9 @@ export function DashboardPage() {
   // Questionnaire modal
   const [uploadedSpec, setUploadedSpec] = useState<Spec | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Batch upload modal
+  const [showBatchUpload, setShowBatchUpload] = useState(false);
 
   // Polling ref
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -275,6 +279,14 @@ export function DashboardPage() {
                 Refresh
               </Button>
               <Button
+                data-testid="batch-upload-button"
+                variant="secondary"
+                onClick={() => setShowBatchUpload(true)}
+                leftIcon={<Files size={16} />}
+              >
+                Batch Upload
+              </Button>
+              <Button
                 variant="primary"
                 onClick={handleUploadClick}
                 loading={isUploading}
@@ -285,7 +297,7 @@ export function DashboardPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.yaml,.yml,.json,.md,.markdown"
+                accept=".pdf,.yaml,.yml,.json,.md,.markdown,.docx"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -397,6 +409,17 @@ export function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Batch upload modal */}
+      <BatchUploadModal
+        isOpen={showBatchUpload}
+        onClose={() => setShowBatchUpload(false)}
+        onUploadComplete={(groupId) => {
+          setShowBatchUpload(false);
+          navigate(`/spec-groups/${groupId}`);
+        }}
+        projectId="default-project"
+      />
     </div>
   );
 }

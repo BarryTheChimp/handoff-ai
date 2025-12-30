@@ -1,22 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-import { Save, Loader2, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { Save, Loader2, Check, AlertCircle, ExternalLink, Wand2 } from 'lucide-react';
 import { EditableText } from '../molecules/EditableText';
 import { MarkdownPreview } from '../molecules/MarkdownPreview';
 import { SizeSelector } from '../molecules/SizeSelector';
+import { EstimateSuggestion } from '../molecules/EstimateSuggestion';
+import { FeedbackSection } from '../molecules/FeedbackSection';
+import { TeachHandoffModal } from './TeachHandoffModal';
 import { StatusBadge, TypeBadge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
+import { Spinner } from '../atoms/Spinner';
 import { useEditorStore } from '../../stores/editorStore';
 import { useTreeStore } from '../../stores/treeStore';
+import { estimationApi, type SingleEstimateResult } from '../../services/api';
 import type { WorkItemStatus } from '../../types/workItem';
 
 interface StoryEditorProps {
   className?: string;
+  projectId?: string;
 }
 
 const statusOptions: WorkItemStatus[] = ['draft', 'ready_for_review', 'approved', 'exported'];
 
-export function StoryEditor({ className }: StoryEditorProps) {
+export function StoryEditor({ className, projectId }: StoryEditorProps) {
   const selectedItem = useTreeStore((state) => state.getSelectedItem());
   const {
     currentItem,
@@ -28,6 +34,52 @@ export function StoryEditor({ className }: StoryEditorProps) {
     setField,
     save,
   } = useEditorStore();
+
+  // Estimation state
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [estimationResult, setEstimationResult] = useState<SingleEstimateResult | null>(null);
+  const [estimationError, setEstimationError] = useState<string | null>(null);
+
+  // Feedback state
+  const [showTeachModal, setShowTeachModal] = useState(false);
+
+  // Clear estimation when item changes
+  useEffect(() => {
+    setEstimationResult(null);
+    setEstimationError(null);
+  }, [currentItem?.id]);
+
+  const handleEstimate = async () => {
+    if (!currentItem) return;
+
+    setIsEstimating(true);
+    setEstimationError(null);
+    setEstimationResult(null);
+
+    try {
+      const result = await estimationApi.estimateSingle(currentItem.id);
+      setEstimationResult(result);
+      // Update the local state if applied
+      if (result.applied) {
+        setField('sizeEstimate', result.suggestedSize);
+      }
+    } catch (err) {
+      setEstimationError(err instanceof Error ? err.message : 'Estimation failed');
+    } finally {
+      setIsEstimating(false);
+    }
+  };
+
+  const handleAcceptEstimate = () => {
+    if (estimationResult) {
+      setField('sizeEstimate', estimationResult.suggestedSize);
+      setEstimationResult(null);
+    }
+  };
+
+  const handleDismissEstimate = () => {
+    setEstimationResult(null);
+  };
 
   // Sync selected item to editor
   useEffect(() => {
@@ -147,11 +199,44 @@ export function StoryEditor({ className }: StoryEditorProps) {
 
           {/* Size (only for stories) */}
           {currentItem.type === 'story' && (
-            <SizeSelector
-              value={currentItem.sizeEstimate}
-              onChange={(size) => setField('sizeEstimate', size)}
-              label="Size Estimate"
-            />
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <SizeSelector
+                  value={currentItem.sizeEstimate}
+                  onChange={(size) => setField('sizeEstimate', size)}
+                  label="Size Estimate"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEstimate}
+                  disabled={isEstimating}
+                  className="mt-6"
+                  title="AI Estimate"
+                >
+                  {isEstimating ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Wand2 size={16} />
+                  )}
+                </Button>
+              </div>
+
+              {estimationError && (
+                <p className="text-sm text-toucan-error">{estimationError}</p>
+              )}
+
+              {estimationResult && !estimationResult.applied && (
+                <EstimateSuggestion
+                  suggestedSize={estimationResult.suggestedSize}
+                  confidence={estimationResult.confidence}
+                  rationale={estimationResult.rationale}
+                  factors={estimationResult.factors}
+                  onAccept={handleAcceptEstimate}
+                  onDismiss={handleDismissEstimate}
+                />
+              )}
+            </div>
           )}
         </div>
 
@@ -204,6 +289,19 @@ export function StoryEditor({ className }: StoryEditorProps) {
           </div>
         )}
 
+        {/* Feedback Section (only for stories) */}
+        {currentItem.type === 'story' && (
+          <div className="pt-4 border-t border-toucan-dark-border">
+            <label className="block text-sm font-medium text-toucan-grey-200 mb-3">
+              Feedback
+            </label>
+            <FeedbackSection
+              workItemId={currentItem.id}
+              onTeachClick={() => setShowTeachModal(true)}
+            />
+          </div>
+        )}
+
         {/* Metadata */}
         <div className="pt-4 border-t border-toucan-dark-border">
           <p className="text-xs text-toucan-grey-600">
@@ -213,6 +311,15 @@ export function StoryEditor({ className }: StoryEditorProps) {
           </p>
         </div>
       </div>
+
+      {/* Teach Handoff Modal */}
+      {projectId && (
+        <TeachHandoffModal
+          isOpen={showTeachModal}
+          onClose={() => setShowTeachModal(false)}
+          projectId={projectId}
+        />
+      )}
     </div>
   );
 }
