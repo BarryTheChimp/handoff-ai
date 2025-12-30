@@ -13,11 +13,8 @@ export async function coverageRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/specs/:specId/coverage',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { specId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { specId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { specId } = request.params as { specId: string };
 
       try {
         const coverage = await coverageService.calculateCoverage(specId);
@@ -39,12 +36,9 @@ export async function coverageRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put(
     '/api/spec-sections/:id/coverage-status',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string }; Body: UpdateCoverageStatusBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const { intentionallyUncovered, reason } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      const { intentionallyUncovered, reason } = request.body as UpdateCoverageStatusBody;
 
       if (typeof intentionallyUncovered !== 'boolean') {
         return reply.status(400).send({

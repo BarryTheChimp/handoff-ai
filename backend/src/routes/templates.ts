@@ -23,11 +23,8 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/projects/:projectId/templates',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
 
       const templates = await templateService.list(projectId);
 
@@ -39,11 +36,8 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/projects/:projectId/templates/default',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
 
       const template = await templateService.getDefault(projectId);
 
@@ -64,12 +58,9 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/projects/:projectId/templates',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string }; Body: CreateBody }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
-      const body = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
+      const body = (request.body || {}) as CreateBody;
 
       // Validation
       if (!body.name || body.name.trim() === '') {
@@ -137,11 +128,8 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/projects/:projectId/templates/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string; id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       const template = await templateService.getById(id);
 
@@ -162,12 +150,9 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put(
     '/api/projects/:projectId/templates/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string; id: string }; Body: UpdateBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const body = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const body = (request.body || {}) as UpdateBody;
 
       if (body.name !== undefined && body.name.length > 100) {
         return reply.status(400).send({
@@ -223,11 +208,8 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete(
     '/api/projects/:projectId/templates/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string; id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       try {
         await templateService.delete(id);
@@ -258,11 +240,8 @@ export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/projects/:projectId/templates/:id/default',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string; id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       try {
         const template = await templateService.setDefault(id);

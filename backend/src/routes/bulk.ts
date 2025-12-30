@@ -29,11 +29,8 @@ export async function bulkRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/workitems/bulk',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Body: BulkUpdateBody }>,
-      reply: FastifyReply
-    ) => {
-      const { itemIds, updates } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { itemIds, updates } = request.body as BulkUpdateBody;
       const user = request.user as { id: string };
 
       // Validation
@@ -117,11 +114,8 @@ export async function bulkRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/workitems/bulk/ai-enhance',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Body: BulkEnhanceBody }>,
-      reply: FastifyReply
-    ) => {
-      const { itemIds, enhancement, context } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { itemIds, enhancement, context } = request.body as BulkEnhanceBody;
       const user = request.user as { id: string };
 
       // Validation
@@ -194,11 +188,8 @@ export async function bulkRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/workitems/bulk/undo',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Body: BulkUndoBody }>,
-      reply: FastifyReply
-    ) => {
-      const { undoToken } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { undoToken } = (request.body as BulkUndoBody);
 
       if (!undoToken) {
         return reply.status(400).send({

@@ -17,11 +17,8 @@ export async function estimateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/workitems/:id/estimate',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       try {
         const result = await estimationService.estimateSingle(id);
@@ -52,12 +49,10 @@ export async function estimateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/specs/:specId/estimate-all',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { specId: string }; Body: EstimateBatchBody }>,
-      reply: FastifyReply
-    ) => {
-      const { specId } = request.params;
-      const { overwriteExisting, minConfidence } = request.body || {};
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { specId } = request.params as Record<string, string>;
+      const body = (request.body || {}) as EstimateBatchBody;
+      const { overwriteExisting, minConfidence } = body;
 
       try {
         const result = await estimationService.estimateBatch(specId, {
@@ -82,11 +77,8 @@ export async function estimateRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/specs/:specId/estimate-undo',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { specId: string }; Body: UndoBatchBody }>,
-      reply: FastifyReply
-    ) => {
-      const { undoToken } = request.body || {};
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { undoToken } = (request.body || {}) as UndoBatchBody;
 
       if (!undoToken) {
         return reply.status(400).send({

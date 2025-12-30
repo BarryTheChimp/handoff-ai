@@ -12,11 +12,8 @@ export async function dependencyRoutes(fastify: FastifyInstance): Promise<void> 
   fastify.get(
     '/api/specs/:specId/dependencies',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { specId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { specId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { specId } = request.params as Record<string, string>;
 
       try {
         const graph = await dependencyService.getGraph(specId);
@@ -37,12 +34,9 @@ export async function dependencyRoutes(fastify: FastifyInstance): Promise<void> 
   fastify.post(
     '/api/workitems/:id/dependencies',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string }; Body: AddDependencyBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const { dependsOnId } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const { dependsOnId } = request.body as Record<string, unknown>;
 
       if (!dependsOnId) {
         return reply.status(400).send({
@@ -54,7 +48,7 @@ export async function dependencyRoutes(fastify: FastifyInstance): Promise<void> 
       }
 
       try {
-        await dependencyService.addDependency(id, dependsOnId);
+        await dependencyService.addDependency(id, dependsOnId as string);
         return reply.status(201).send({ success: true });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to add dependency';
@@ -100,11 +94,8 @@ export async function dependencyRoutes(fastify: FastifyInstance): Promise<void> 
   fastify.delete(
     '/api/workitems/:id/dependencies/:dependsOnId',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string; dependsOnId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id, dependsOnId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id, dependsOnId } = request.params as Record<string, string>;
 
       try {
         await dependencyService.removeDependency(id, dependsOnId);

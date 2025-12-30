@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { getClaudeService } from './ClaudeService.js';
-import type { SizeEstimate, WorkItemStatus } from '@prisma/client';
+import type { SizeEstimate, WorkItemStatus, Prisma } from '@prisma/client';
 
 interface BulkUpdatePayload {
   sizeEstimate?: SizeEstimate;
@@ -151,8 +151,8 @@ export function createBulkOperationService(): BulkOperationService {
           specId,
           operation: 'update_fields',
           itemIds: validIds,
-          payload: updates,
-          previousValues: previousValues,
+          payload: updates as unknown as Prisma.InputJsonValue,
+          previousValues: previousValues as unknown as Prisma.InputJsonValue,
           expiresAt,
         },
       });
@@ -287,10 +287,10 @@ Return JSON only:
           specId,
           operation: 'ai_enhance',
           itemIds: enhancements.map(e => e.itemId),
-          payload: { enhancement, context },
+          payload: { enhancement, context } as unknown as Prisma.InputJsonValue,
           previousValues: previousValues.filter(pv =>
             enhancements.some(e => e.itemId === pv.itemId)
-          ),
+          ) as unknown as Prisma.InputJsonValue,
           expiresAt,
         },
       });

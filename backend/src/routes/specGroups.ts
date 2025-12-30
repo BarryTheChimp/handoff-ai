@@ -27,11 +27,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/projects/:projectId/spec-groups',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
 
       const groups = await specGroupService.listGroups(projectId);
 
@@ -43,11 +40,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/projects/:projectId/specs/batch',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
       const user = request.user as { id: string };
 
       // Parse multipart
@@ -199,11 +193,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/spec-groups/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       const group = await specGroupService.getGroup(id);
 
@@ -224,12 +215,9 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/spec-groups/:id/resolve',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string }; Body: ResolveBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const { resolutions } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const { resolutions } = request.body as Record<string, unknown>;
       const user = request.user as { id: string };
 
       if (!resolutions || !Array.isArray(resolutions) || resolutions.length === 0) {
@@ -270,11 +258,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/spec-groups/:id/translate',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       const group = await specGroupService.getGroup(id);
 
@@ -313,11 +298,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete(
     '/api/spec-groups/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       try {
         await specGroupService.deleteGroup(id);
@@ -338,12 +320,10 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/spec-groups/:id/specs',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string }; Body: AddSpecBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const { specId } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const body = (request.body || {}) as AddSpecBody;
+      const { specId } = body;
 
       if (!specId) {
         return reply.status(400).send({
@@ -373,11 +353,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete(
     '/api/spec-groups/:id/specs/:specId',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string; specId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id, specId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id, specId } = request.params as Record<string, string>;
 
       try {
         await specGroupService.removeSpecFromGroup(id, specId);
@@ -398,11 +375,8 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/spec-groups/:id/analyze',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       try {
         // Start async analysis

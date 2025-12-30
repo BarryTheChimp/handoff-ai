@@ -31,12 +31,10 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/workitems/:id/feedback',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string }; Body: FeedbackBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const { rating, feedback, categories } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const body = (request.body || {}) as FeedbackBody;
+      const { rating, feedback, categories } = body;
       const user = request.user as unknown as UserPayload;
       const userId = user.sub || user.id || '';
 
@@ -52,8 +50,8 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const feedbackInput: FeedbackInput = {
           rating,
-          feedback: feedback ?? undefined,
-          categories: categories ?? undefined,
+          feedback,
+          categories,
         };
         const result = await feedbackService.submitFeedback(id, userId, feedbackInput);
         return reply.status(201).send({ data: result });
@@ -83,11 +81,8 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/workitems/:id/feedback',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
       const user = request.user as unknown as UserPayload;
       const userId = user.sub || user.id || '';
 
@@ -116,11 +111,8 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     '/api/projects/:projectId/preferences',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
 
       try {
         const preferences = await preferenceService.list(projectId);
@@ -140,12 +132,10 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/projects/:projectId/preferences',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string }; Body: CreatePreferenceBody }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
-      const { preference, description, category } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
+      const body = (request.body || {}) as CreatePreferenceBody;
+      const { preference, description, category } = body;
 
       if (!preference || preference.trim() === '') {
         return reply.status(400).send({
@@ -179,12 +169,9 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put(
     '/api/projects/:projectId/preferences/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string; id: string }; Body: UpdatePreferenceBody }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
-      const { active } = request.body;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const { active } = request.body as Record<string, unknown>;
 
       if (typeof active !== 'boolean') {
         return reply.status(400).send({
@@ -213,11 +200,8 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete(
     '/api/projects/:projectId/preferences/:id',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string; id: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { id } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
 
       try {
         await preferenceService.delete(id);
@@ -237,11 +221,8 @@ export async function feedbackRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/api/projects/:projectId/preferences/extract',
     { preHandler: [fastify.authenticate] },
-    async (
-      request: FastifyRequest<{ Params: { projectId: string } }>,
-      reply: FastifyReply
-    ) => {
-      const { projectId } = request.params;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { projectId } = request.params as Record<string, string>;
 
       try {
         const extracted = await preferenceService.extractFromFeedback(projectId);

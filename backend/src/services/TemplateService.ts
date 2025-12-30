@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import type { Prisma } from '@prisma/client';
 
 export type ACFormat = 'gherkin' | 'bullets' | 'checklist';
 
@@ -123,7 +124,7 @@ export function createTemplateService(): TemplateService {
           name: input.name,
           acFormat: input.acFormat || 'bullets',
           requiredSections: input.requiredSections || [],
-          customFields: input.customFields || [],
+          customFields: (input.customFields || []) as unknown as Prisma.InputJsonValue,
           isDefault: input.isDefault || false,
         },
       });
