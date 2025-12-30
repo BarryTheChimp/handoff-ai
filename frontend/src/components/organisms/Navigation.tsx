@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileCode2, Settings2 } from 'lucide-react';
+import { LayoutDashboard, FileCode2, Settings2, BookOpen } from 'lucide-react';
 import { useProject } from '../../hooks/useProject';
 import { clsx } from 'clsx';
 
@@ -16,6 +16,12 @@ const NAV_ITEMS: NavItem[] = [
     path: '/',
     requiresProject: true,
     icon: <LayoutDashboard className="w-5 h-5" />,
+  },
+  {
+    label: 'Knowledge',
+    path: '/knowledge',
+    requiresProject: true,
+    icon: <BookOpen className="w-5 h-5" />,
   },
   {
     label: 'Templates',

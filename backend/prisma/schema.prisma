@@ -58,10 +58,14 @@ model Project {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  specs       Spec[]
-  specGroups  SpecGroup[]
-  templates   StoryTemplate[]
-  preferences TeamPreference[]
+  specs              Spec[]
+  specGroups         SpecGroup[]
+  templates          StoryTemplate[]
+  preferences        TeamPreference[]
+  knowledge          ProjectKnowledge?
+  glossary           GlossaryTerm[]
+  referenceDocuments ReferenceDocument[]
+  preferencesConfig  TeamPreferencesConfig?
 
   @@map("projects")
 }
@@ -381,4 +385,165 @@ model TeamPreference {
   @@index([projectId])
   @@index([active])
   @@map("team_preferences")
+}
+
+// =============================================================================
+// KNOWLEDGE BASE MODELS
+// =============================================================================
+
+/// ProjectKnowledge - Core project context (brief)
+model ProjectKnowledge {
+  id             String    @id @default(uuid())
+  projectId      String    @unique @map("project_id")
+
+  // Project Brief (markdown)
+  brief          String?   @db.Text
+  briefUpdatedAt DateTime? @map("brief_updated_at")
+
+  // Timestamps
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_knowledge")
+}
+
+/// GlossaryTerm - Domain terminology
+model GlossaryTerm {
+  id           String   @id @default(uuid())
+  projectId    String   @map("project_id")
+
+  // Term details
+  term         String
+  definition   String   @db.Text
+  aliases      String[] @default([])
+  category     String?
+
+  // Usage hints for AI
+  useInstead   String?  @map("use_instead")
+  avoidTerms   String[] @default([]) @map("avoid_terms")
+
+  // Source tracking (for auto-extracted terms)
+  isManual     Boolean  @default(true) @map("is_manual")
+  sourceSpecId String?  @map("source_spec_id")
+  confidence   Float?
+
+  // Timestamps
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, term])
+  @@index([projectId])
+  @@index([category])
+  @@map("glossary_terms")
+}
+
+enum DocumentType {
+  architecture
+  process
+  technical
+  business
+  other
+}
+
+/// ReferenceDocument - Uploaded context documents
+model ReferenceDocument {
+  id            String       @id @default(uuid())
+  projectId     String       @map("project_id")
+
+  // File info
+  name          String
+  fileName      String       @map("file_name")
+  filePath      String       @map("file_path")
+  fileType      String       @map("file_type")
+  fileSize      Int          @map("file_size")
+
+  // Extracted content
+  extractedText String?      @db.Text @map("extracted_text")
+  summary       String?      @db.Text
+
+  // Metadata
+  docType       DocumentType @default(other) @map("doc_type")
+  isActive      Boolean      @default(true) @map("is_active")
+
+  // Timestamps
+  uploadedAt    DateTime     @default(now()) @map("uploaded_at")
+  uploadedBy    String       @map("uploaded_by")
+
+  // Relations
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks        DocumentChunk[]
+
+  @@index([projectId])
+  @@map("reference_documents")
+}
+
+/// DocumentChunk - Chunked content for retrieval
+model DocumentChunk {
+  id          String            @id @default(uuid())
+  documentId  String            @map("document_id")
+
+  // Chunk content
+  content     String            @db.Text
+  chunkIndex  Int               @map("chunk_index")
+
+  // Metadata for retrieval
+  heading     String?
+  summary     String?
+
+  // Relations
+  document    ReferenceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+enum ACFormat {
+  gherkin
+  bullets
+  checklist
+  numbered
+}
+
+enum Verbosity {
+  concise
+  balanced
+  detailed
+}
+
+enum TechnicalDepth {
+  high_level
+  moderate
+  implementation
+}
+
+/// TeamPreferencesConfig - Team conventions for AI
+model TeamPreferencesConfig {
+  id               String         @id @default(uuid())
+  projectId        String         @unique @map("project_id")
+
+  // Story Structure
+  acFormat         ACFormat       @default(bullets) @map("ac_format")
+  requiredSections String[]       @default([]) @map("required_sections")
+  maxAcCount       Int            @default(8) @map("max_ac_count")
+
+  // Content Style
+  verbosity        Verbosity      @default(balanced)
+  technicalDepth   TechnicalDepth @default(moderate) @map("technical_depth")
+
+  // Custom preferences (freeform, learned)
+  customPrefs      Json           @default("[]") @map("custom_prefs")
+
+  // Timestamps
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("team_preferences_config")
 }

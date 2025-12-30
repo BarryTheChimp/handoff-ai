@@ -8,6 +8,7 @@ import { TemplatesPage } from './pages/TemplatesPage';
 import { DependencyGraphPage } from './pages/DependencyGraphPage';
 import { CoveragePage } from './pages/CoveragePage';
 import { PreferencesPage } from './pages/PreferencesPage';
+import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 
 // Check if user is logged in
 function isAuthenticated(): boolean {
@@ -128,6 +129,7 @@ export function App() {
         <Route path="/dependencies/:specId" element={<ProtectedRoute><DependencyGraphPage /></ProtectedRoute>} />
         <Route path="/coverage/:specId" element={<ProtectedRoute><CoveragePage /></ProtectedRoute>} />
         <Route path="/preferences/:projectId" element={<ProtectedRoute><PreferencesPage /></ProtectedRoute>} />
+        <Route path="/knowledge" element={<ProtectedRoute><KnowledgeBasePage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

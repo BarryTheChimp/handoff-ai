@@ -947,3 +947,196 @@ export const projectsApi = {
     }
   },
 };
+
+// =============================================================================
+// KNOWLEDGE BASE TYPES & API
+// =============================================================================
+
+export interface ProjectBrief {
+  projectId: string;
+  brief: string | null;
+  briefUpdatedAt: string | null;
+}
+
+export interface GlossaryTerm {
+  id: string;
+  projectId: string;
+  term: string;
+  definition: string;
+  aliases: string[];
+  category: string | null;
+  useInstead: string | null;
+  avoidTerms: string[];
+  isManual: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGlossaryTermInput {
+  term: string;
+  definition: string;
+  aliases?: string[];
+  category?: string;
+  useInstead?: string;
+  avoidTerms?: string[];
+}
+
+export interface ReferenceDocument {
+  id: string;
+  projectId: string;
+  name: string;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  extractedText: string | null;
+  summary: string | null;
+  docType: 'architecture' | 'process' | 'technical' | 'business' | 'other';
+  isActive: boolean;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+export interface TeamPreferencesConfig {
+  projectId: string;
+  acFormat: 'gherkin' | 'bullets' | 'checklist' | 'numbered';
+  requiredSections: string[];
+  maxAcCount: number;
+  verbosity: 'concise' | 'balanced' | 'detailed';
+  technicalDepth: 'high_level' | 'moderate' | 'implementation';
+  customPrefs: unknown[];
+}
+
+export const knowledgeApi = {
+  // Project Brief
+  async getBrief(projectId: string): Promise<ProjectBrief> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/knowledge/brief`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ProjectBrief>(response);
+  },
+
+  async updateBrief(projectId: string, brief: string): Promise<ProjectBrief> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/knowledge/brief`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ brief }),
+    });
+    return handleResponse<ProjectBrief>(response);
+  },
+
+  // Glossary
+  async listGlossaryTerms(projectId: string, category?: string): Promise<GlossaryTerm[]> {
+    const url = category
+      ? `${API_BASE}/projects/${projectId}/glossary?category=${encodeURIComponent(category)}`
+      : `${API_BASE}/projects/${projectId}/glossary`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    return handleResponse<GlossaryTerm[]>(response);
+  },
+
+  async createGlossaryTerm(projectId: string, input: CreateGlossaryTermInput): Promise<GlossaryTerm> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/glossary`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<GlossaryTerm>(response);
+  },
+
+  async updateGlossaryTerm(projectId: string, termId: string, input: Partial<CreateGlossaryTermInput>): Promise<GlossaryTerm> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/glossary/${termId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<GlossaryTerm>(response);
+  },
+
+  async deleteGlossaryTerm(projectId: string, termId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/glossary/${termId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Delete failed' } }));
+      throw new ApiError(error.error?.message || 'Delete failed', 'DELETE_FAILED', response.status);
+    }
+  },
+
+  async bulkImportGlossary(projectId: string, terms: CreateGlossaryTermInput[]): Promise<{ imported: number; skipped: number }> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/glossary/bulk`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ terms }),
+    });
+    return handleResponse<{ imported: number; skipped: number }>(response);
+  },
+
+  // Reference Documents
+  async listReferenceDocuments(projectId: string): Promise<ReferenceDocument[]> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/reference-docs`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ReferenceDocument[]>(response);
+  },
+
+  async uploadReferenceDocument(projectId: string, file: File, name?: string, docType?: string): Promise<ReferenceDocument> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (name) formData.append('name', name);
+    if (docType) formData.append('docType', docType);
+
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/projects/${projectId}/reference-docs`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    return handleResponse<ReferenceDocument>(response);
+  },
+
+  async updateReferenceDocument(projectId: string, docId: string, updates: { name?: string; docType?: string; isActive?: boolean }): Promise<ReferenceDocument> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/reference-docs/${docId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates),
+    });
+    return handleResponse<ReferenceDocument>(response);
+  },
+
+  async deleteReferenceDocument(projectId: string, docId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/reference-docs/${docId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Delete failed' } }));
+      throw new ApiError(error.error?.message || 'Delete failed', 'DELETE_FAILED', response.status);
+    }
+  },
+
+  // Team Preferences Config
+  async getPreferencesConfig(projectId: string): Promise<TeamPreferencesConfig> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/preferences-config`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<TeamPreferencesConfig>(response);
+  },
+
+  async updatePreferencesConfig(projectId: string, config: Partial<TeamPreferencesConfig>): Promise<TeamPreferencesConfig> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/preferences-config`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(config),
+    });
+    return handleResponse<TeamPreferencesConfig>(response);
+  },
+
+  // Context Building
+  async getContext(projectId: string): Promise<{ context: string; tokenEstimate: number }> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/knowledge/context`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ context: string; tokenEstimate: number }>(response);
+  },
+};
