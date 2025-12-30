@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileUp, RefreshCw, Files } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Spinner } from '../components/atoms/Spinner';
+import { Header } from '../components/organisms/Header';
 import { SpecCard } from '../components/organisms/SpecCard';
 import { EmptyState } from '../components/organisms/EmptyState';
 import { DeleteConfirmModal } from '../components/organisms/DeleteConfirmModal';
@@ -260,54 +261,48 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-toucan-dark">
-      {/* Header */}
-      <header className="border-b border-toucan-dark-border bg-toucan-dark-lighter">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-bold">
-              <span className="text-toucan-orange">Handoff</span>
-              <span className="text-toucan-grey-100"> AI</span>
-            </h1>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => loadSpecs()}
-                leftIcon={<RefreshCw size={16} />}
-              >
-                Refresh
-              </Button>
-              <Button
-                data-testid="batch-upload-button"
-                variant="secondary"
-                onClick={() => setShowBatchUpload(true)}
-                leftIcon={<Files size={16} />}
-              >
-                Batch Upload
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleUploadClick}
-                loading={isUploading}
-                leftIcon={<FileUp size={16} />}
-              >
-                Upload Spec
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.yaml,.yml,.json,.md,.markdown,.docx"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Action bar */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-toucan-grey-100">Specifications</h2>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => loadSpecs()}
+              leftIcon={<RefreshCw size={16} />}
+            >
+              Refresh
+            </Button>
+            <Button
+              data-testid="batch-upload-button"
+              variant="secondary"
+              onClick={() => setShowBatchUpload(true)}
+              leftIcon={<Files size={16} />}
+            >
+              Batch Upload
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleUploadClick}
+              loading={isUploading}
+              leftIcon={<FileUp size={16} />}
+            >
+              Upload Spec
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.yaml,.yml,.json,.md,.markdown,.docx"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        </div>
+
         {/* Filters */}
         {specs.length > 0 && (
           <div className="mb-6">
