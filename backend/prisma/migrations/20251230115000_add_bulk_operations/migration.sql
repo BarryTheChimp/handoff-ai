@@ -1,10 +1,10 @@
 -- CreateTable
 CREATE TABLE "bulk_operations" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "user_id" VARCHAR(255) NOT NULL,
-    "spec_id" UUID NOT NULL,
-    "operation" VARCHAR(50) NOT NULL,
-    "item_ids" UUID[] NOT NULL,
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "spec_id" TEXT NOT NULL,
+    "operation" TEXT NOT NULL,
+    "item_ids" TEXT[] NOT NULL,
     "payload" JSONB NOT NULL,
     "previous_values" JSONB NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

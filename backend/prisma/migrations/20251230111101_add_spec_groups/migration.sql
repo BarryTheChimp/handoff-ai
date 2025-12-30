@@ -3,10 +3,10 @@ CREATE TYPE "SpecGroupStatus" AS ENUM ('pending', 'analyzing', 'conflicts_detect
 
 -- CreateTable
 CREATE TABLE "spec_groups" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "project_id" UUID NOT NULL,
-    "name" VARCHAR(200) NOT NULL,
-    "primary_spec_id" UUID,
+    "id" TEXT NOT NULL,
+    "project_id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "primary_spec_id" TEXT,
     "stitched_context" TEXT,
     "status" "SpecGroupStatus" NOT NULL DEFAULT 'pending',
     "error_message" TEXT,
@@ -18,27 +18,27 @@ CREATE TABLE "spec_groups" (
 
 -- CreateTable
 CREATE TABLE "spec_conflicts" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "spec_group_id" UUID NOT NULL,
-    "spec1_id" UUID NOT NULL,
-    "spec1_section" VARCHAR(200) NOT NULL,
+    "id" TEXT NOT NULL,
+    "spec_group_id" TEXT NOT NULL,
+    "spec1_id" TEXT NOT NULL,
+    "spec1_section" TEXT NOT NULL,
     "spec1_text" TEXT NOT NULL,
-    "spec2_id" UUID NOT NULL,
-    "spec2_section" VARCHAR(200) NOT NULL,
+    "spec2_id" TEXT NOT NULL,
+    "spec2_section" TEXT NOT NULL,
     "spec2_text" TEXT NOT NULL,
-    "conflict_type" VARCHAR(50) NOT NULL,
-    "severity" VARCHAR(20) NOT NULL DEFAULT 'warning',
+    "conflict_type" TEXT NOT NULL,
+    "severity" TEXT NOT NULL DEFAULT 'warning',
     "description" TEXT NOT NULL,
-    "resolution" VARCHAR(50),
+    "resolution" TEXT,
     "merged_text" TEXT,
-    "resolved_by" UUID,
+    "resolved_by" TEXT,
     "resolved_at" TIMESTAMP(3),
 
     CONSTRAINT "spec_conflicts_pkey" PRIMARY KEY ("id")
 );
 
 -- Add spec_group_id to specs table
-ALTER TABLE "specs" ADD COLUMN "spec_group_id" UUID;
+ALTER TABLE "specs" ADD COLUMN "spec_group_id" TEXT;
 
 -- CreateIndex
 CREATE INDEX "spec_groups_project_id_idx" ON "spec_groups"("project_id");
