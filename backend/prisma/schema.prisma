@@ -70,6 +70,7 @@ model Project {
   contextChunks      ContextChunk[]
   storyEdits         StoryEdit[]
   learnedPatterns    LearnedPattern[]
+  health             ProjectHealth?
 
   @@map("projects")
 }
@@ -722,4 +723,44 @@ model LearnedPattern {
   @@index([projectId])
   @@index([status])
   @@map("learned_patterns")
+}
+
+// =============================================================================
+// PROJECT HEALTH
+// =============================================================================
+
+enum HealthLevel {
+  minimal     // 0-25
+  basic       // 26-50
+  good        // 51-75
+  excellent   // 76-100
+}
+
+/// ProjectHealth - Cached health score
+model ProjectHealth {
+  id              String      @id @default(uuid())
+  projectId       String      @unique @map("project_id")
+
+  // Overall
+  score           Int         // 0-100
+  level           HealthLevel
+
+  // Components
+  briefScore      Int         @map("brief_score")
+  glossaryScore   Int         @map("glossary_score")
+  prefsScore      Int         @map("prefs_score")
+  specsScore      Int         @map("specs_score")
+  sourcesScore    Int         @map("sources_score")
+  learningScore   Int         @map("learning_score")
+
+  // Recommendations
+  recommendations Json        @default("[]")  // string[]
+
+  // Timestamps
+  calculatedAt    DateTime    @map("calculated_at")
+
+  // Relations
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_health")
 }

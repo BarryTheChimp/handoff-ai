@@ -1384,3 +1384,40 @@ export const learningApi = {
     return handleResponse<{ detected: number }>(response);
   },
 };
+
+// =============================================================================
+// PROJECT HEALTH TYPES & API
+// =============================================================================
+
+export type HealthLevel = 'minimal' | 'basic' | 'good' | 'excellent';
+
+export interface HealthComponent {
+  name: string;
+  weight: number;
+  score: number;
+  recommendation?: string;
+}
+
+export interface HealthResult {
+  score: number;
+  level: HealthLevel;
+  components: HealthComponent[];
+  recommendations: string[];
+}
+
+export const healthApi = {
+  async getHealth(projectId: string): Promise<HealthResult> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/health`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<HealthResult>(response);
+  },
+
+  async recalculate(projectId: string): Promise<HealthResult> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/health/recalculate`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<HealthResult>(response);
+  },
+};
