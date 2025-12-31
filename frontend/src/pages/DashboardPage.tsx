@@ -28,16 +28,12 @@ interface SpecWithStats extends Spec {
 }
 
 export function DashboardPage() {
+  // ALL HOOKS MUST BE AT THE TOP - NO CONDITIONAL RETURNS BEFORE HOOKS
   const navigate = useNavigate();
   const { selectedProjectId, isLoading: isProjectLoading } = useProject();
   const [specs, setSpecs] = useState<SpecWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Redirect to projects page if no project selected
-  if (!isProjectLoading && !selectedProjectId) {
-    return <Navigate to="/projects" replace />;
-  }
 
   // Filters
   const [search, setSearch] = useState('');
@@ -64,7 +60,7 @@ export function DashboardPage() {
   // Polling ref
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load specs
+  // Load specs - useCallback MUST be before any conditional return
   const loadSpecs = useCallback(async () => {
     if (!selectedProjectId) return;
 
@@ -106,10 +102,12 @@ export function DashboardPage() {
     }
   }, [selectedProjectId]);
 
-  // Initial load
+  // Initial load - useEffect MUST be before any conditional return
   useEffect(() => {
-    loadSpecs();
-  }, [loadSpecs]);
+    if (selectedProjectId) {
+      loadSpecs();
+    }
+  }, [loadSpecs, selectedProjectId]);
 
   // Poll for status updates when there are processing specs
   useEffect(() => {
@@ -130,6 +128,19 @@ export function DashboardPage() {
       }
     };
   }, [specs, loadSpecs]);
+
+  // NOW we can do conditional returns - AFTER all hooks
+  if (isProjectLoading) {
+    return (
+      <div className="min-h-screen bg-toucan-dark flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!selectedProjectId) {
+    return <Navigate to="/projects" replace />;
+  }
 
   // Filter specs
   const filteredSpecs = specs.filter(spec => {
@@ -419,17 +430,15 @@ export function DashboardPage() {
       )}
 
       {/* Batch upload modal */}
-      {selectedProjectId && (
-        <BatchUploadModal
-          isOpen={showBatchUpload}
-          onClose={() => setShowBatchUpload(false)}
-          onUploadComplete={(groupId) => {
-            setShowBatchUpload(false);
-            navigate(`/spec-groups/${groupId}`);
-          }}
-          projectId={selectedProjectId}
-        />
-      )}
+      <BatchUploadModal
+        isOpen={showBatchUpload}
+        onClose={() => setShowBatchUpload(false)}
+        onUploadComplete={(groupId) => {
+          setShowBatchUpload(false);
+          navigate(`/spec-groups/${groupId}`);
+        }}
+        projectId={selectedProjectId}
+      />
     </div>
   );
 }
