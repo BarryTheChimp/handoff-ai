@@ -6,6 +6,7 @@ import { MarkdownPreview } from '../molecules/MarkdownPreview';
 import { SizeSelector } from '../molecules/SizeSelector';
 import { EstimateSuggestion } from '../molecules/EstimateSuggestion';
 import { FeedbackSection } from '../molecules/FeedbackSection';
+import { InvestScoreCard } from '../molecules/InvestScoreCard';
 import { TeachHandoffModal } from './TeachHandoffModal';
 import { StatusBadge, TypeBadge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
@@ -286,6 +287,19 @@ export function StoryEditor({ className, projectId }: StoryEditorProps) {
                 ))}
               </ul>
             </div>
+          </div>
+        )}
+
+        {/* INVEST Score (only for stories) */}
+        {currentItem.type === 'story' && (
+          <div className="pt-4 border-t border-toucan-dark-border">
+            <label className="block text-sm font-medium text-toucan-grey-200 mb-3">
+              Quality Score
+            </label>
+            <InvestScoreCard
+              workItemId={currentItem.id}
+              workItemType={currentItem.type}
+            />
           </div>
         )}
 

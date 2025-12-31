@@ -54,6 +54,7 @@ export function DraggableWorkBreakdownTree({
     items,
     expandedIds,
     selectedId,
+    filteredIds,
     toggleExpand,
     setSelected,
     setItems,
@@ -76,11 +77,15 @@ export function DraggableWorkBreakdownTree({
     })
   );
 
-  // Get flat list of visible items for sortable context
+  // Get flat list of visible items for sortable context (respecting filters)
   const visibleItems = useMemo(() => {
     const result: WorkItem[] = [];
 
     function traverse(item: WorkItem) {
+      // Skip if filtered out
+      if (filteredIds && !filteredIds.has(item.id)) {
+        return;
+      }
       result.push(item);
       if (item.children && expandedIds.has(item.id)) {
         item.children.forEach(traverse);
@@ -89,7 +94,7 @@ export function DraggableWorkBreakdownTree({
 
     hierarchicalItems.forEach(traverse);
     return result;
-  }, [hierarchicalItems, expandedIds]);
+  }, [hierarchicalItems, expandedIds, filteredIds]);
 
   const visibleIds = useMemo(() => visibleItems.map(item => item.id), [visibleItems]);
 

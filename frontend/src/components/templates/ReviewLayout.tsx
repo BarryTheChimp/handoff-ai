@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
@@ -17,12 +17,14 @@ import {
   Wand2,
   PieChart,
   Lightbulb,
+  Command,
 } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { DraggableWorkBreakdownTree } from '../organisms/DraggableWorkBreakdownTree';
 import { StoryEditor } from '../organisms/StoryEditor';
 import { BatchEstimateModal } from '../organisms/BatchEstimateModal';
+import { WorkItemFilters, WorkItemFilterState, DEFAULT_FILTERS } from '../molecules/WorkItemFilters';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useTreeStore } from '../../stores/treeStore';
 import type { Spec, WorkItem } from '../../types/workItem';
@@ -70,11 +72,86 @@ export function ReviewLayout({ spec, onBack, onExport }: ReviewLayoutProps) {
   const [sizes, setSizes] = useState<number[]>(() => loadLayoutPrefs().sizes);
   const [treeCollapsed, setTreeCollapsed] = useState(false);
   const [showBatchEstimate, setShowBatchEstimate] = useState(false);
+  const [filters, setFilters] = useState<WorkItemFilterState>(DEFAULT_FILTERS);
 
   // Get work items for estimation stats
   const items = useTreeStore((state) => state.items);
+  const setFilteredItems = useTreeStore((state) => state.setFilteredItems);
   const stories = items.filter((item: WorkItem) => item.type === 'story');
   const storiesWithEstimates = stories.filter((item: WorkItem) => item.sizeEstimate);
+
+  // Filter items based on current filters
+  const filteredIds = useMemo(() => {
+    if (
+      !filters.search &&
+      filters.types.length === 0 &&
+      filters.statuses.length === 0 &&
+      filters.sizes.length === 0 &&
+      filters.hasEstimate === 'all'
+    ) {
+      return null; // No filtering
+    }
+
+    const matchingIds = new Set<string>();
+    const searchLower = filters.search.toLowerCase();
+
+    items.forEach(item => {
+      let matches = true;
+
+      // Search filter
+      if (filters.search) {
+        matches = matches && (
+          item.title.toLowerCase().includes(searchLower) ||
+          item.description?.toLowerCase().includes(searchLower) ||
+          false
+        );
+      }
+
+      // Type filter
+      if (filters.types.length > 0) {
+        matches = matches && filters.types.includes(item.type);
+      }
+
+      // Status filter
+      if (filters.statuses.length > 0) {
+        matches = matches && filters.statuses.includes(item.status);
+      }
+
+      // Size filter
+      if (filters.sizes.length > 0) {
+        matches = matches && (item.sizeEstimate ? filters.sizes.includes(item.sizeEstimate) : false);
+      }
+
+      // Estimate filter
+      if (filters.hasEstimate === 'estimated') {
+        matches = matches && !!item.sizeEstimate;
+      } else if (filters.hasEstimate === 'unestimated') {
+        matches = matches && !item.sizeEstimate;
+      }
+
+      if (matches) {
+        matchingIds.add(item.id);
+        // Also add parent chain to show hierarchy
+        let current = item;
+        while (current.parentId) {
+          matchingIds.add(current.parentId);
+          const parent = items.find(i => i.id === current.parentId);
+          if (parent) {
+            current = parent;
+          } else {
+            break;
+          }
+        }
+      }
+    });
+
+    return matchingIds;
+  }, [items, filters]);
+
+  // Update store with filtered items
+  useEffect(() => {
+    setFilteredItems(filteredIds);
+  }, [filteredIds, setFilteredItems]);
 
   // Undo/Redo functionality
   const handleRefresh = useCallback(() => {
@@ -210,25 +287,36 @@ export function ReviewLayout({ spec, onBack, onExport }: ReviewLayoutProps) {
           <Allotment.Pane minSize={200} preferredSize={sizes[0] ?? 300}>
             <div className="flex flex-col h-full bg-toucan-dark">
               {/* Tree header */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-toucan-dark-border">
-                <h2 className="text-sm font-medium text-toucan-grey-200">Work Items</h2>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setTreeCollapsed(!treeCollapsed)}
-                    title={treeCollapsed ? 'Expand all' : 'Collapse all'}
-                  >
-                    {treeCollapsed ? <Expand size={14} /> : <Minimize2 size={14} />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<Plus size={14} />}
-                    title="Add story"
-                  >
-                    Add
-                  </Button>
+              <div className="px-3 py-2 border-b border-toucan-dark-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-toucan-grey-200">Work Items</h2>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTreeCollapsed(!treeCollapsed)}
+                      title={treeCollapsed ? 'Expand all' : 'Collapse all'}
+                    >
+                      {treeCollapsed ? <Expand size={14} /> : <Minimize2 size={14} />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<Plus size={14} />}
+                      title="Add story"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+                <WorkItemFilters filters={filters} onChange={setFilters} />
+                <div className="flex items-center justify-between text-xs text-toucan-grey-500">
+                  <span>
+                    {filteredIds ? `${filteredIds.size} of ${items.length}` : `${items.length}`} items
+                  </span>
+                  <span className="flex items-center gap-1 text-toucan-grey-600">
+                    <Command size={10} />K to search
+                  </span>
                 </div>
               </div>
 

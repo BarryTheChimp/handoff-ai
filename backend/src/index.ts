@@ -22,6 +22,8 @@ import { knowledgeRoutes } from './routes/knowledge.js';
 import { contextSourceRoutes } from './routes/context-sources.js';
 import { learningRoutes } from './routes/learning.js';
 import { projectHealthRoutes } from './routes/health.js';
+import { investRoutes } from './routes/invest.js';
+import { exportRoutes } from './routes/exports.js';
 
 // Extend Fastify with authenticate decorator
 declare module 'fastify' {
@@ -112,6 +114,8 @@ async function buildApp() {
   await fastify.register(contextSourceRoutes);
   await fastify.register(learningRoutes);
   await fastify.register(projectHealthRoutes);
+  await fastify.register(investRoutes);
+  await fastify.register(exportRoutes);
 
   // Health check endpoint
   fastify.get('/', async (_request, _reply) => {

@@ -1,6 +1,7 @@
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { parse as parseYaml } from 'yaml';
+import fs from 'fs/promises';
 import { prisma } from '../lib/prisma.js';
 import { storageService } from './StorageService.js';
 
@@ -240,6 +241,81 @@ async function extractFromJson(buffer: Buffer): Promise<{ text: string; sections
   return { text, sections };
 }
 
+/**
+ * Extract text from Markdown files
+ */
+async function extractFromMarkdown(buffer: Buffer): Promise<{ text: string; sections: ExtractedSection[] }> {
+  const text = buffer.toString('utf-8');
+  const lines = text.split('\n');
+  const sections: ExtractedSection[] = [];
+
+  let currentSection: ExtractedSection | null = null;
+  let contentLines: string[] = [];
+  let orderIndex = 0;
+  let sectionNumber = 1;
+
+  // Regex for markdown headings (# Heading, ## Heading, etc.)
+  const headingRegex = /^(#{1,6})\s+(.+)$/;
+
+  for (const line of lines) {
+    const match = line.match(headingRegex);
+
+    if (match) {
+      // Save previous section if exists
+      if (currentSection) {
+        currentSection.content = contentLines.join('\n').trim();
+        if (currentSection.content || currentSection.heading) {
+          sections.push(currentSection);
+        }
+      }
+
+      // Start new section
+      const level = match[1]?.length ?? 1;
+      const heading = match[2]?.trim() ?? '';
+      currentSection = {
+        sectionRef: String(sectionNumber++),
+        heading,
+        content: '',
+        orderIndex: orderIndex++,
+      };
+      contentLines = [];
+    } else if (currentSection) {
+      contentLines.push(line);
+    } else {
+      // Content before first heading
+      contentLines.push(line);
+    }
+  }
+
+  // Save last section
+  if (currentSection) {
+    currentSection.content = contentLines.join('\n').trim();
+    if (currentSection.content || currentSection.heading) {
+      sections.push(currentSection);
+    }
+  } else if (contentLines.length > 0) {
+    // No headings found, create single section
+    sections.push({
+      sectionRef: '1',
+      heading: 'Document Content',
+      content: contentLines.join('\n').trim(),
+      orderIndex: 0,
+    });
+  }
+
+  // If no sections found, create one default section
+  if (sections.length === 0 && text.trim()) {
+    sections.push({
+      sectionRef: '1',
+      heading: 'Document Content',
+      content: text.trim(),
+      orderIndex: 0,
+    });
+  }
+
+  return { text, sections };
+}
+
 export interface ExtractionService {
   extractContent(specId: string): Promise<ExtractionResult>;
 }
@@ -288,6 +364,10 @@ export function createExtractionService(): ExtractionService {
             break;
           case 'json':
             result = await extractFromJson(buffer);
+            break;
+          case 'md':
+          case 'markdown':
+            result = await extractFromMarkdown(buffer);
             break;
           default:
             throw new ExtractionError(`Unsupported file type: ${spec.fileType}`);

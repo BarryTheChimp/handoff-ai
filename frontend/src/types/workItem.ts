@@ -2,7 +2,7 @@
 
 export type WorkItemType = 'epic' | 'feature' | 'story';
 export type WorkItemStatus = 'draft' | 'ready_for_review' | 'approved' | 'exported';
-export type SizeEstimate = 'S' | 'M' | 'L' | 'XL';
+export type SizeEstimate = 'XS' | 'S' | 'M' | 'L' | 'XL';
 
 export interface WorkItem {
   id: string;

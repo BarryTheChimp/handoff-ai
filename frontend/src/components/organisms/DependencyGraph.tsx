@@ -41,6 +41,13 @@ const COLORS = {
   default: '#6B7280',   // Gray
 };
 
+const STATUS_COLORS: Record<string, string> = {
+  draft: '#6B7280',
+  ready_for_review: '#F59E0B',
+  approved: '#10B981',
+  exported: '#3B82F6',
+};
+
 export function DependencyGraph({
   nodes,
   edges,
@@ -260,9 +267,54 @@ export function DependencyGraph({
       .attr('font-weight', 'bold')
       .style('pointer-events', 'none');
 
+    // Create tooltip div
+    const tooltip = d3.select('body').append('div')
+      .attr('class', 'dependency-tooltip')
+      .style('position', 'absolute')
+      .style('visibility', 'hidden')
+      .style('background', '#252542')
+      .style('border', '1px solid #3D3D5C')
+      .style('border-radius', '8px')
+      .style('padding', '12px')
+      .style('font-size', '12px')
+      .style('color', '#F5F5F7')
+      .style('pointer-events', 'none')
+      .style('z-index', '1000')
+      .style('max-width', '250px')
+      .style('box-shadow', '0 4px 6px -1px rgba(0, 0, 0, 0.3)');
+
+    // Hover handlers for tooltip
+    node.on('mouseenter', (event, d) => {
+      const statusColor = STATUS_COLORS[d.status] || STATUS_COLORS.draft;
+      tooltip.html(`
+        <div style="margin-bottom: 8px;">
+          <strong style="font-size: 14px;">${d.title}</strong>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+          <span style="color: ${COLORS[d.type]}; text-transform: capitalize;">${d.type}</span>
+          <span style="color: ${statusColor};">${d.status.replace(/_/g, ' ')}</span>
+        </div>
+        ${d.sizeEstimate ? `<div style="color: #9999A5;">Size: ${d.sizeEstimate}</div>` : ''}
+        ${criticalSet.has(d.id) ? '<div style="color: #F87171; margin-top: 4px;">On critical path</div>' : ''}
+        ${cycleNodeIds.has(d.id) ? '<div style="color: #F87171; margin-top: 4px;">Part of circular dependency</div>' : ''}
+      `)
+        .style('visibility', 'visible')
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+    })
+    .on('mousemove', (event) => {
+      tooltip
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+    })
+    .on('mouseleave', () => {
+      tooltip.style('visibility', 'hidden');
+    });
+
     // Click handler
     node.on('click', (event, d) => {
       event.stopPropagation();
+      tooltip.style('visibility', 'hidden');
       if (addingDependencyFromId && addingDependencyFromId !== d.id) {
         // Adding dependency mode - this node is the target
         onAddDependency?.(addingDependencyFromId, d.id);
@@ -287,6 +339,8 @@ export function DependencyGraph({
 
     return () => {
       simulation.stop();
+      // Clean up tooltip div
+      d3.select('body').selectAll('.dependency-tooltip').remove();
     };
   }, [filteredNodes, filteredEdges, criticalPath, cycles, dimensions, selectedNodeId, addingDependencyFromId, onNodeClick, onAddDependency, loadPositions, savePositions]);
 

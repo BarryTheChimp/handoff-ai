@@ -10,6 +10,7 @@ interface TreeState {
   expandedIds: Set<string>;
   selectedId: string | null;
   focusedId: string | null;
+  filteredIds: Set<string> | null; // null = no filter applied
 
   // Actions
   setItems: (items: WorkItem[], hierarchical: WorkItem[]) => void;
@@ -18,6 +19,7 @@ interface TreeState {
   collapseAll: () => void;
   setSelected: (id: string | null) => void;
   setFocused: (id: string | null) => void;
+  setFilteredItems: (ids: Set<string> | null) => void;
 
   // Navigation helpers
   getNextVisibleId: (currentId: string) => string | null;
@@ -63,6 +65,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   expandedIds: new Set<string>(),
   selectedId: null,
   focusedId: null,
+  filteredIds: null,
 
   setItems: (items, hierarchical) => {
     // Auto-expand epics by default
@@ -102,6 +105,10 @@ export const useTreeStore = create<TreeState>((set, get) => ({
 
   setFocused: (id) => {
     set({ focusedId: id });
+  },
+
+  setFilteredItems: (ids) => {
+    set({ filteredIds: ids });
   },
 
   getNextVisibleId: (currentId) => {

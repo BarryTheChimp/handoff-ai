@@ -14,6 +14,7 @@ import { BatchUploadModal } from '../components/organisms/BatchUploadModal';
 import { SpecFilters } from '../components/molecules/SpecFilters';
 import { specsApi, ApiError } from '../services/api';
 import { useProject } from '../hooks/useProject';
+import { toast } from '../stores/toastStore';
 import type { Spec } from '../types/workItem';
 
 // Poll interval for status updates (5 seconds)
@@ -157,9 +158,11 @@ export function DashboardPage() {
     try {
       await specsApi.delete(specToDelete.id);
       setSpecs(prev => prev.filter(s => s.id !== specToDelete.id));
+      toast.success('Specification deleted', `"${specToDelete.name}" has been removed`);
       setSpecToDelete(null);
     } catch (err) {
       console.error('Failed to delete spec:', err);
+      toast.error('Delete failed', 'Could not delete the specification. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -195,6 +198,8 @@ export function DashboardPage() {
 
       const { data: newSpec } = await response.json() as { data: Spec };
 
+      toast.success('File uploaded', `"${file.name}" has been uploaded successfully`);
+
       // Show questionnaire for the new spec
       setUploadedSpec(newSpec);
 
@@ -202,6 +207,7 @@ export function DashboardPage() {
       await loadSpecs();
     } catch (err) {
       console.error('Failed to upload spec:', err);
+      toast.error('Upload failed', `Could not upload "${file.name}". Please try again.`);
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -234,6 +240,7 @@ export function DashboardPage() {
 
       // Trigger extraction
       await specsApi.extract(specId);
+      toast.info('Extracting content', 'Parsing document structure...');
 
       // Wait for extraction to complete (poll)
       let spec = await specsApi.get(specId);
@@ -244,14 +251,21 @@ export function DashboardPage() {
 
       // If extraction succeeded, trigger translation
       if (spec.status === 'ready') {
+        toast.info('Generating work items', 'AI is translating your spec...');
         await specsApi.translate(specId);
+      } else if (spec.status === 'error') {
+        throw new Error(spec.errorMessage || 'Extraction failed');
       }
+
+      toast.success('Processing complete', 'Work items have been generated');
 
       // Reload specs and navigate to review
       await loadSpecs();
       navigate(`/review/${specId}`);
     } catch (err) {
       console.error('Failed to process spec:', err);
+      const message = err instanceof Error ? err.message : 'Unknown error occurred';
+      toast.error('Processing failed', message);
     } finally {
       setIsProcessing(false);
       setUploadedSpec(null);

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileCode2, Settings2, BookOpen } from 'lucide-react';
+import { LayoutDashboard, FileCode2, Settings2, BookOpen, Settings } from 'lucide-react';
 import { useProject } from '../../hooks/useProject';
 import { clsx } from 'clsx';
 
@@ -34,6 +34,12 @@ const NAV_ITEMS: NavItem[] = [
     path: '/preferences',
     requiresProject: true,
     icon: <Settings2 className="w-5 h-5" />,
+  },
+  {
+    label: 'Settings',
+    path: '/settings',
+    requiresProject: false,
+    icon: <Settings className="w-5 h-5" />,
   },
 ];
 

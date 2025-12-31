@@ -9,6 +9,9 @@ import { DependencyGraphPage } from './pages/DependencyGraphPage';
 import { CoveragePage } from './pages/CoveragePage';
 import { PreferencesPage } from './pages/PreferencesPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import { SettingsPage } from './pages/SettingsPage';
+import { ToastContainer } from './components/organisms/ToastContainer';
+import { CommandPalette } from './components/organisms/CommandPalette';
 
 // Check if user is logged in
 function isAuthenticated(): boolean {
@@ -67,9 +70,19 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">
       <div className="card p-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold text-center mb-6">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-toucan-orange rounded-xl flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-3xl">H</span>
+          </div>
+        </div>
+
+        <h1 className="text-2xl font-bold text-center mb-2">
           <span className="text-toucan-orange">Handoff</span> AI
         </h1>
+        <p className="text-sm text-toucan-grey-400 text-center mb-1">
+          by Toucan Labs
+        </p>
         <p className="text-toucan-grey-400 text-center mb-6">
           Sign in to continue
         </p>
@@ -112,6 +125,21 @@ function LoginPage() {
           </button>
         </form>
       </div>
+
+      {/* Version footer */}
+      <p className="mt-8 text-xs text-toucan-grey-600">
+        Version 1.0.0
+      </p>
+
+      {/* Demo credentials */}
+      <div className="mt-4 p-3 bg-toucan-dark-lighter border border-toucan-dark-border rounded-lg text-center">
+        <p className="text-xs text-toucan-grey-400 mb-1">Demo Credentials</p>
+        <p className="text-sm text-toucan-grey-200">
+          <span className="text-toucan-grey-400">Username:</span> admin
+          <span className="mx-2 text-toucan-grey-600">|</span>
+          <span className="text-toucan-grey-400">Password:</span> admin123
+        </p>
+      </div>
     </div>
   );
 }
@@ -130,8 +158,11 @@ export function App() {
         <Route path="/coverage/:specId" element={<ProtectedRoute><CoveragePage /></ProtectedRoute>} />
         <Route path="/preferences/:projectId" element={<ProtectedRoute><PreferencesPage /></ProtectedRoute>} />
         <Route path="/knowledge" element={<ProtectedRoute><KnowledgeBasePage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <CommandPalette />
+      <ToastContainer />
     </BrowserRouter>
   );
 }

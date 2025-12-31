@@ -259,6 +259,94 @@ export const jiraApi = {
   },
 };
 
+// Local Export Types
+export type LocalExportFormat = 'csv' | 'json' | 'markdown';
+
+export interface ExportFormatInfo {
+  id: LocalExportFormat | 'jira';
+  name: string;
+  description: string;
+  extension: string | null;
+  mimeType: string | null;
+}
+
+export interface LocalExportFilters {
+  types?: ('epic' | 'feature' | 'story')[];
+  statuses?: ('draft' | 'ready_for_review' | 'approved' | 'exported')[];
+}
+
+export interface LocalExportOptions {
+  format: LocalExportFormat;
+  filters?: LocalExportFilters;
+  includeMetadata?: boolean;
+  flattenHierarchy?: boolean;
+}
+
+// Local Export API
+export const localExportApi = {
+  async getFormats(specId: string): Promise<{
+    formats: ExportFormatInfo[];
+    filters: { types: string[]; statuses: string[] };
+  }> {
+    const response = await fetch(`${API_BASE}/specs/${specId}/export/formats`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{
+      formats: ExportFormatInfo[];
+      filters: { types: string[]; statuses: string[] };
+    }>(response);
+  },
+
+  async exportToFile(specId: string, options: LocalExportOptions): Promise<{ blob: Blob; filename: string; itemCount: number }> {
+    const params = new URLSearchParams();
+    params.set('format', options.format);
+
+    if (options.filters?.types?.length) {
+      params.set('types', options.filters.types.join(','));
+    }
+    if (options.filters?.statuses?.length) {
+      params.set('statuses', options.filters.statuses.join(','));
+    }
+    if (options.includeMetadata) {
+      params.set('includeMetadata', 'true');
+    }
+    if (options.flattenHierarchy) {
+      params.set('flattenHierarchy', 'true');
+    }
+
+    const response = await fetch(`${API_BASE}/specs/${specId}/export/local?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Export failed', code: 'EXPORT_FAILED' } }));
+      throw new ApiError(
+        error.error?.message || 'Export failed',
+        error.error?.code || 'EXPORT_FAILED',
+        response.status
+      );
+    }
+
+    const blob = await response.blob();
+    const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ||
+      `export.${options.format === 'markdown' ? 'md' : options.format}`;
+    const itemCount = parseInt(response.headers.get('X-Item-Count') || '0', 10);
+
+    return { blob, filename, itemCount };
+  },
+
+  downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+};
+
 // Spec Group Types
 export type SpecGroupStatus = 'pending' | 'analyzing' | 'conflicts_detected' | 'ready' | 'error';
 
@@ -710,6 +798,34 @@ export const estimationApi = {
       body: JSON.stringify({ undoToken }),
     });
     return handleResponse<{ reverted: number }>(response);
+  },
+};
+
+// INVEST Score Types
+export interface CriterionScore {
+  score: number;
+  reason: string;
+  tips?: string[];
+}
+
+export interface InvestScore {
+  overall: number;
+  independent: CriterionScore;
+  negotiable: CriterionScore;
+  valuable: CriterionScore;
+  estimable: CriterionScore;
+  small: CriterionScore;
+  testable: CriterionScore;
+  suggestions: string[];
+}
+
+// INVEST Score API
+export const investApi = {
+  async getScore(workItemId: string): Promise<InvestScore> {
+    const response = await fetch(`${API_BASE}/workitems/${workItemId}/invest-score`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<InvestScore>(response);
   },
 };
 
