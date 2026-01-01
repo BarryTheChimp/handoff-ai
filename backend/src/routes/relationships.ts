@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { relationshipService } from '../services/RelationshipService';
+import { relationshipService } from '../services/RelationshipService.js';
 
 interface SpecParams {
   specId: string;

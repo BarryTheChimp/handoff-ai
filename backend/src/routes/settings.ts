@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { brandingService, BrandingSettings, JiraSettings, ExportSettings } from '../services/BrandingService';
+import { brandingService, BrandingSettings, JiraSettings, ExportSettings } from '../services/BrandingService.js';
 
 interface AuthenticatedRequest {
   user: { id: string; username: string };

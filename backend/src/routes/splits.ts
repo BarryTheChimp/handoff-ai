@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { storySplitService, SplitSuggestion } from '../services/StorySplitService';
+import { storySplitService, SplitSuggestion } from '../services/StorySplitService.js';
 
 interface WorkItemParams {
   id: string;

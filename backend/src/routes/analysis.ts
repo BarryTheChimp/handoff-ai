@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { specAnalysisService } from '../services/SpecAnalysisService';
+import { specAnalysisService } from '../services/SpecAnalysisService.js';
 
 interface SpecParams {
   specId: string;

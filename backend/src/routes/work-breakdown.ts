@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { workBreakdownService } from '../services/WorkBreakdownService';
+import { workBreakdownService } from '../services/WorkBreakdownService.js';
 
 interface ProjectParams {
   projectId: string;

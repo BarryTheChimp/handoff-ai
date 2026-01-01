@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { duplicateDetectionService, DuplicatePair } from '../services/DuplicateDetectionService';
+import { duplicateDetectionService, DuplicatePair } from '../services/DuplicateDetectionService.js';
 import { prisma } from '../lib/prisma.js';
 
 interface SpecParams {
