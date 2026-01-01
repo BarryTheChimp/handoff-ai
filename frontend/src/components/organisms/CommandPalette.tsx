@@ -4,12 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search,
   FileText,
-  GitBranch,
   Settings,
   Home,
   FolderOpen,
-  PieChart,
-  Lightbulb,
   Command,
   CornerDownLeft,
   ArrowUp,
@@ -17,7 +14,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTreeStore } from '../../stores/treeStore';
-import type { WorkItem, WorkItemType } from '../../types/workItem';
+import type { WorkItemType } from '../../types/workItem';
 
 interface CommandItem {
   id: string;

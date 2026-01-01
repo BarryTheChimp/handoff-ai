@@ -231,7 +231,7 @@ export function ExportModal({ isOpen, onClose, specId, specName }: ExportModalPr
       const newTypes = currentTypes.includes(type)
         ? currentTypes.filter(t => t !== type)
         : [...currentTypes, type];
-      return { ...prev, types: newTypes.length > 0 ? newTypes : undefined };
+      return { ...prev, types: newTypes };
     });
   };
 
@@ -241,7 +241,7 @@ export function ExportModal({ isOpen, onClose, specId, specName }: ExportModalPr
       const newStatuses = currentStatuses.includes(status)
         ? currentStatuses.filter(s => s !== status)
         : [...currentStatuses, status];
-      return { ...prev, statuses: newStatuses.length > 0 ? newStatuses : undefined };
+      return { ...prev, statuses: newStatuses };
     });
   };
 

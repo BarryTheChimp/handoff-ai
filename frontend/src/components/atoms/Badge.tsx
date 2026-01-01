@@ -90,6 +90,7 @@ export function TypeBadge({ type, size = 'sm', className }: TypeBadgeProps) {
 
 // Size badge
 const sizeVariants: Record<SizeEstimate, BadgeVariant> = {
+  XS: 'success',
   S: 'success',
   M: 'info',
   L: 'warning',

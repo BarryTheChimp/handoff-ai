@@ -8,9 +8,10 @@ interface SizeSelectorProps {
   className?: string;
 }
 
-const sizes: SizeEstimate[] = ['S', 'M', 'L', 'XL'];
+const sizes: SizeEstimate[] = ['XS', 'S', 'M', 'L', 'XL'];
 
 const sizeDescriptions: Record<SizeEstimate, string> = {
+  XS: '< 1 day',
   S: '~1 day',
   M: '2-3 days',
   L: '4-5 days',
@@ -18,6 +19,7 @@ const sizeDescriptions: Record<SizeEstimate, string> = {
 };
 
 const sizeColors: Record<SizeEstimate, string> = {
+  XS: 'bg-toucan-success/20 text-toucan-success border-toucan-success/30 hover:bg-toucan-success/30',
   S: 'bg-toucan-success/20 text-toucan-success border-toucan-success/30 hover:bg-toucan-success/30',
   M: 'bg-toucan-info/20 text-toucan-info border-toucan-info/30 hover:bg-toucan-info/30',
   L: 'bg-toucan-warning/20 text-toucan-warning border-toucan-warning/30 hover:bg-toucan-warning/30',
@@ -25,6 +27,7 @@ const sizeColors: Record<SizeEstimate, string> = {
 };
 
 const selectedSizeColors: Record<SizeEstimate, string> = {
+  XS: 'bg-toucan-success text-white border-toucan-success',
   S: 'bg-toucan-success text-white border-toucan-success',
   M: 'bg-toucan-info text-white border-toucan-info',
   L: 'bg-toucan-warning text-toucan-dark border-toucan-warning',
