@@ -71,6 +71,7 @@ model Project {
   storyEdits         StoryEdit[]
   learnedPatterns    LearnedPattern[]
   health             ProjectHealth?
+  duplicateMatches   DuplicateMatch[]
 
   @@map("projects")
 }
@@ -152,6 +153,8 @@ model WorkItem {
   history  WorkItemHistory[]
   feedback AIFeedback[]
   edits    StoryEdit[]
+  sourceDuplicates DuplicateMatch[] @relation("SourceDuplicate")
+  targetDuplicates DuplicateMatch[] @relation("TargetDuplicate")
 
   @@index([specId])
   @@index([parentId])
@@ -763,4 +766,82 @@ model ProjectHealth {
   project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("project_health")
+}
+
+// =============================================================================
+// WAVE 4: USER SETTINGS
+// =============================================================================
+
+/// UserSettings - User-specific settings (branding, exports, Jira)
+model UserSettings {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  branding        Json     @default("{}")
+  jira            Json     @default("{}")
+  exportSettings  Json     @default("{}") @map("export_settings")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_settings")
+}
+
+// =============================================================================
+// WAVE 4: SPEC ANALYSIS
+// =============================================================================
+
+/// SpecAnalysis - Pre-translation analysis results
+model SpecAnalysis {
+  id              String   @id @default(uuid())
+  specId          String   @map("spec_id")
+  type            String   // 'pre_translation' | 'quality' | 'coverage'
+
+  // Analysis data (JSON varies by type)
+  data            Json     @default("{}")
+
+  // Timestamps
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([specId, type])
+  @@index([specId])
+  @@map("spec_analyses")
+}
+
+// =============================================================================
+// WAVE 4: DUPLICATE DETECTION
+// =============================================================================
+
+/// DuplicateMatch - Persisted duplicate detection results
+model DuplicateMatch {
+  id                String    @id @default(uuid())
+  projectId         String    @map("project_id")
+
+  // Source and target work items
+  sourceWorkItemId  String    @map("source_work_item_id")
+  targetWorkItemId  String?   @map("target_work_item_id")
+  targetJiraKey     String?   @map("target_jira_key")
+
+  // Match details
+  similarityScore   Float     @map("similarity_score")
+  matchType         String    // 'exact' | 'semantic' | 'partial'
+  overlappingText   String?   @db.Text @map("overlapping_text")
+
+  // Status tracking
+  status            String    @default("pending") // 'pending' | 'ignored' | 'merged'
+  reviewedAt        DateTime? @map("reviewed_at")
+  reviewedBy        String?   @map("reviewed_by")
+
+  // Timestamps
+  detectedAt        DateTime  @default(now()) @map("detected_at")
+
+  // Relations
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceWorkItem    WorkItem  @relation("SourceDuplicate", fields: [sourceWorkItemId], references: [id], onDelete: Cascade)
+  targetWorkItem    WorkItem? @relation("TargetDuplicate", fields: [targetWorkItemId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceWorkItemId, targetWorkItemId])
+  @@index([projectId])
+  @@index([sourceWorkItemId])
+  @@index([status])
+  @@map("duplicate_matches")
 }

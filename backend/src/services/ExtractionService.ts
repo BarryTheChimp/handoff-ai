@@ -27,11 +27,55 @@ export interface ExtractionResult {
 }
 
 /**
+ * Check if PDF is encrypted
+ */
+function isPdfEncrypted(buffer: Buffer): boolean {
+  const str = buffer.toString('utf-8', 0, Math.min(buffer.length, 2048));
+  return str.includes('/Encrypt') || str.includes('Encrypt');
+}
+
+/**
+ * Check if PDF appears to be image-only (scanned)
+ */
+function isPdfImageOnly(text: string, pageCount: number): boolean {
+  // If very little text extracted relative to pages, likely scanned
+  const avgCharsPerPage = text.length / Math.max(pageCount, 1);
+  return avgCharsPerPage < 50 && text.trim().length < 100;
+}
+
+/**
  * Extract text from PDF files
  */
 async function extractFromPdf(buffer: Buffer): Promise<{ text: string; sections: ExtractedSection[] }> {
-  const data = await pdfParse(buffer);
+  // Check for encrypted PDF before parsing
+  if (isPdfEncrypted(buffer)) {
+    throw new ExtractionError(
+      'This PDF is password-protected. Please upload an unencrypted version of the document.'
+    );
+  }
+
+  let data;
+  try {
+    data = await pdfParse(buffer);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (message.toLowerCase().includes('encrypt')) {
+      throw new ExtractionError(
+        'This PDF is password-protected. Please upload an unencrypted version of the document.'
+      );
+    }
+    throw new ExtractionError(`Failed to parse PDF: ${message}`);
+  }
+
   const text = data.text;
+  const pageCount = data.numpages || 1;
+
+  // Check for scanned/image-only PDF
+  if (isPdfImageOnly(text, pageCount)) {
+    throw new ExtractionError(
+      'This PDF appears to be a scanned document with no extractable text. Please upload a text-based PDF or convert using OCR software first.'
+    );
+  }
 
   // Parse sections based on numbered headings (1., 1.1, 2., etc.)
   const sections: ExtractedSection[] = [];

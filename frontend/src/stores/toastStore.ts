@@ -16,7 +16,7 @@ export interface Toast {
 
 interface ToastState {
   toasts: Toast[];
-  addToast: (toast: Omit<Toast, 'id'>) => string;
+  addToast: (toastOrTitle: Omit<Toast, 'id'> | string, type?: ToastType) => string;
   removeToast: (id: string) => void;
   clearAll: () => void;
 }
@@ -26,8 +26,16 @@ let toastId = 0;
 export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
 
-  addToast: (toast) => {
+  addToast: (toastOrTitle, type) => {
     const id = `toast-${++toastId}`;
+
+    // Support both calling conventions:
+    // addToast({ title: 'msg', type: 'error' }) or addToast('msg', 'error')
+    const toast: Omit<Toast, 'id'> =
+      typeof toastOrTitle === 'string'
+        ? { title: toastOrTitle, type: type || 'info' }
+        : toastOrTitle;
+
     const newToast: Toast = {
       ...toast,
       id,
@@ -35,7 +43,7 @@ export const useToastStore = create<ToastState>((set, get) => ({
     };
 
     set((state) => ({
-      toasts: [...state.toasts, newToast],
+      toasts: [...state.toasts, newToast].slice(-5), // Max 5 toasts
     }));
 
     // Auto-remove after duration (unless duration is 0)
@@ -95,3 +103,20 @@ export const toast = {
     });
   },
 };
+
+// Hook for easy access within React components
+export function useToast() {
+  const store = useToastStore();
+  return {
+    success: (title: string, message?: string) =>
+      store.addToast({ type: 'success', title, ...(message !== undefined && { message }) }),
+    error: (title: string, message?: string) =>
+      store.addToast({ type: 'error', title, ...(message !== undefined && { message }), duration: 0 }),
+    warning: (title: string, message?: string) =>
+      store.addToast({ type: 'warning', title, ...(message !== undefined && { message }) }),
+    info: (title: string, message?: string) =>
+      store.addToast({ type: 'info', title, ...(message !== undefined && { message }) }),
+    dismiss: store.removeToast,
+    clearAll: store.clearAll,
+  };
+}

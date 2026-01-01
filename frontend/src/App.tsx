@@ -10,8 +10,10 @@ import { CoveragePage } from './pages/CoveragePage';
 import { PreferencesPage } from './pages/PreferencesPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { SettingsPage } from './pages/SettingsPage';
+import { WorkBreakdownPage } from './pages/WorkBreakdownPage';
 import { ToastContainer } from './components/organisms/ToastContainer';
 import { CommandPalette } from './components/organisms/CommandPalette';
+import { OperationProgress } from './components/molecules/OperationProgress';
 
 // Check if user is logged in
 function isAuthenticated(): boolean {
@@ -159,10 +161,13 @@ export function App() {
         <Route path="/preferences/:projectId" element={<ProtectedRoute><PreferencesPage /></ProtectedRoute>} />
         <Route path="/knowledge" element={<ProtectedRoute><KnowledgeBasePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/work-breakdown/:projectId" element={<ProtectedRoute><WorkBreakdownPage /></ProtectedRoute>} />
+        <Route path="/work-breakdown/spec/:specId" element={<ProtectedRoute><WorkBreakdownPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <CommandPalette />
       <ToastContainer />
+      <OperationProgress />
     </BrowserRouter>
   );
 }

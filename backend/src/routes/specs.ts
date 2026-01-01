@@ -3,6 +3,8 @@ import { createDocumentService, DocumentValidationError } from '../services/Docu
 import { createExtractionService, ExtractionError } from '../services/ExtractionService.js';
 import { createTranslationService, TranslationError } from '../services/TranslationService.js';
 import { prisma } from '../lib/prisma.js';
+import { storageService } from '../services/StorageService.js';
+import mammoth from 'mammoth';
 
 interface ListSpecsQuery {
   projectId?: string;
@@ -280,6 +282,77 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
           message: 'Extraction started',
         },
       });
+    }
+  );
+
+  /**
+   * GET /api/specs/:id/preview
+   * Preview the original uploaded file
+   */
+  app.get<{ Params: SpecIdParams }>(
+    '/api/specs/:id/preview',
+    {
+      onRequest: [app.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const spec = await prisma.spec.findUnique({
+        where: { id },
+        select: { id: true, name: true, filePath: true, fileType: true },
+      });
+
+      if (!spec) {
+        return reply.status(404).send({
+          error: { code: 'NOT_FOUND', message: 'Spec not found' },
+        });
+      }
+
+      try {
+        const buffer = await storageService.read(spec.filePath);
+
+        // For PDF, serve the file directly
+        if (spec.fileType.toLowerCase() === 'pdf') {
+          return reply
+            .header('Content-Type', 'application/pdf')
+            .header('Content-Disposition', `inline; filename="${spec.name}"`)
+            .send(buffer);
+        }
+
+        // For DOCX, convert to HTML
+        if (spec.fileType.toLowerCase() === 'docx') {
+          const result = await mammoth.convertToHtml({ buffer });
+          const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #333; }
+                h1, h2, h3 { color: #1A1A2E; margin-top: 1.5em; }
+                table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+                td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background: #f5f5f5; }
+                ul, ol { padding-left: 2em; }
+                p { margin: 0.5em 0; }
+              </style>
+            </head>
+            <body>${result.value}</body>
+            </html>
+          `;
+          return reply.header('Content-Type', 'text/html').send(html);
+        }
+
+        // For text files (md, txt, yaml, json), serve as plain text
+        return reply
+          .header('Content-Type', 'text/plain; charset=utf-8')
+          .send(buffer.toString('utf-8'));
+      } catch (error) {
+        console.error('Preview error:', error);
+        return reply.status(410).send({
+          error: { code: 'FILE_GONE', message: 'Original file is no longer available' },
+        });
+      }
     }
   );
 

@@ -19,6 +19,171 @@ interface UpdateBody {
 export async function templateRoutes(fastify: FastifyInstance): Promise<void> {
   const templateService = getTemplateService();
 
+  // ============================================
+  // Routes without projectId in path (for TemplateBuilder component)
+  // ============================================
+
+  // Get template by ID (no projectId required)
+  fastify.get(
+    '/api/templates/:id',
+    { preHandler: [fastify.authenticate] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+
+      const template = await templateService.getById(id);
+
+      if (!template) {
+        return reply.status(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Template not found',
+          },
+        });
+      }
+
+      return reply.send({ data: template });
+    }
+  );
+
+  // Update template by ID (no projectId required)
+  fastify.put(
+    '/api/templates/:id',
+    { preHandler: [fastify.authenticate] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as Record<string, string>;
+      const body = (request.body || {}) as UpdateBody;
+
+      if (body.name !== undefined && body.name.length > 100) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Template name must be 100 characters or less',
+          },
+        });
+      }
+
+      if (body.acFormat && !['gherkin', 'bullets', 'checklist'].includes(body.acFormat)) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid AC format. Must be: gherkin, bullets, or checklist',
+          },
+        });
+      }
+
+      try {
+        const input: UpdateTemplateInput = {};
+        if (body.name !== undefined) input.name = body.name.trim();
+        if (body.acFormat !== undefined) input.acFormat = body.acFormat;
+        if (body.requiredSections !== undefined) input.requiredSections = body.requiredSections;
+        if (body.customFields !== undefined) input.customFields = body.customFields;
+
+        const template = await templateService.update(id, input);
+
+        return reply.send({ data: template });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update template';
+
+        if (message.includes('Unique constraint')) {
+          return reply.status(400).send({
+            error: {
+              code: 'DUPLICATE_NAME',
+              message: 'A template with this name already exists in this project',
+            },
+          });
+        }
+
+        return reply.status(400).send({
+          error: {
+            code: 'UPDATE_FAILED',
+            message,
+          },
+        });
+      }
+    }
+  );
+
+  // Create template (projectId in body)
+  fastify.post(
+    '/api/templates',
+    { preHandler: [fastify.authenticate] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const body = (request.body || {}) as CreateBody & { projectId?: string };
+
+      if (!body.projectId) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'projectId is required',
+          },
+        });
+      }
+
+      if (!body.name || body.name.trim() === '') {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Template name is required',
+          },
+        });
+      }
+
+      if (body.name.length > 100) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Template name must be 100 characters or less',
+          },
+        });
+      }
+
+      if (body.acFormat && !['gherkin', 'bullets', 'checklist'].includes(body.acFormat)) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid AC format. Must be: gherkin, bullets, or checklist',
+          },
+        });
+      }
+
+      try {
+        const input: CreateTemplateInput = {
+          name: body.name.trim(),
+          acFormat: body.acFormat,
+          requiredSections: body.requiredSections,
+          customFields: body.customFields,
+          isDefault: body.isDefault,
+        };
+
+        const template = await templateService.create(body.projectId, input);
+
+        return reply.status(201).send({ data: template });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to create template';
+
+        if (message.includes('Unique constraint')) {
+          return reply.status(400).send({
+            error: {
+              code: 'DUPLICATE_NAME',
+              message: 'A template with this name already exists in this project',
+            },
+          });
+        }
+
+        return reply.status(400).send({
+          error: {
+            code: 'CREATE_FAILED',
+            message,
+          },
+        });
+      }
+    }
+  );
+
+  // ============================================
+  // Routes with projectId in path (original routes)
+  // ============================================
+
   // List templates for a project
   fastify.get(
     '/api/projects/:projectId/templates',

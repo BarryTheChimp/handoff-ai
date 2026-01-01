@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, LogOut, Settings, HelpCircle } from 'lucide-react';
 import type { User } from '../../hooks/useAuth';
 
 interface UserDropdownProps {
@@ -10,6 +11,7 @@ interface UserDropdownProps {
 export function UserDropdown({ user, onLogout }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Close on outside click
   useEffect(() => {
@@ -71,6 +73,28 @@ export function UserDropdown({ user, onLogout }: UserDropdownProps) {
 
           {/* Actions */}
           <div className="py-1">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/settings');
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-toucan-grey-200 hover:bg-toucan-dark flex items-center gap-2"
+              data-testid="settings-button"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
+            <a
+              href="https://github.com/anthropics/claude-code/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full px-4 py-2 text-left text-sm text-toucan-grey-200 hover:bg-toucan-dark flex items-center gap-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <HelpCircle className="w-4 h-4" />
+              Help & Support
+            </a>
+            <div className="border-t border-toucan-dark-border my-1" />
             <button
               onClick={() => {
                 setIsOpen(false);
