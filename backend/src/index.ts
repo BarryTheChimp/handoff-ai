@@ -140,9 +140,17 @@ async function buildApp() {
   // API health check with database status
   fastify.get('/api/health', async (_request, _reply) => {
     let dbStatus = 'unknown';
+    let demoUserExists = false;
     try {
       await checkDatabaseConnection();
       dbStatus = 'connected';
+
+      // Check if demo user exists
+      const demoUser = await prisma.user.findUnique({
+        where: { email: 'demo@handoff.ai' },
+        select: { id: true, email: true, status: true },
+      });
+      demoUserExists = !!demoUser;
     } catch {
       dbStatus = 'disconnected';
     }
@@ -152,6 +160,7 @@ async function buildApp() {
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version ?? '0.1.0',
       database: dbStatus,
+      demoUser: demoUserExists,
     };
   });
 
