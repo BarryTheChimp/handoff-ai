@@ -91,7 +91,7 @@ export const specsApi = {
   async extract(specId: string): Promise<void> {
     const response = await fetch(`${API_BASE}/specs/${specId}/extract`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     await handleResponse(response);
   },
@@ -105,7 +105,7 @@ export const specsApi = {
   }> {
     const response = await fetch(`${API_BASE}/specs/${specId}/translate`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse(response);
   },
@@ -113,7 +113,7 @@ export const specsApi = {
   async delete(specId: string): Promise<void> {
     const response = await fetch(`${API_BASE}/specs/${specId}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: { message: 'Delete failed', code: 'UNKNOWN' } }));
@@ -217,7 +217,7 @@ export const jiraApi = {
   async disconnect(): Promise<void> {
     const response = await fetch(`${API_BASE}/jira/disconnect`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     if (!response.ok) {
       throw new ApiError('Failed to disconnect', 'DISCONNECT_FAILED', response.status);
@@ -250,7 +250,7 @@ export const jiraApi = {
   async cancelExport(exportId: string): Promise<void> {
     const response = await fetch(`${API_BASE}/exports/${exportId}/cancel`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     if (!response.ok) {
       throw new ApiError('Failed to cancel export', 'CANCEL_FAILED', response.status);
@@ -487,7 +487,7 @@ export const specGroupsApi = {
   async translate(groupId: string): Promise<{ specGroupId: string; message: string; status: string }> {
     const response = await fetch(`${API_BASE}/spec-groups/${groupId}/translate`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse(response);
   },
@@ -495,7 +495,7 @@ export const specGroupsApi = {
   async delete(groupId: string): Promise<void> {
     const response = await fetch(`${API_BASE}/spec-groups/${groupId}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     if (!response.ok) {
       throw new ApiError('Failed to delete group', 'DELETE_FAILED', response.status);
@@ -673,7 +673,7 @@ export const templatesApi = {
   async setDefault(projectId: string, templateId: string): Promise<StoryTemplate> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/templates/${templateId}/default`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<StoryTemplate>(response);
   },
@@ -781,7 +781,7 @@ export const estimationApi = {
   async estimateSingle(workItemId: string): Promise<SingleEstimateResult> {
     const response = await fetch(`${API_BASE}/workitems/${workItemId}/estimate`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<SingleEstimateResult>(response);
   },
@@ -988,7 +988,7 @@ export const preferencesApi = {
   }> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/preferences/extract`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<{ extracted: number; preferences: ExtractedPreference[] }>(response);
   },
@@ -1378,7 +1378,7 @@ export const contextSourcesApi = {
   async sync(projectId: string, sourceId: string): Promise<{ synced: number; message: string }> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/context-sources/${sourceId}/sync`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<{ synced: number; message: string }>(response);
   },
@@ -1512,7 +1512,7 @@ export const learningApi = {
   async acceptPattern(projectId: string, patternId: string): Promise<LearnedPattern> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/learning/patterns/${patternId}/accept`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<LearnedPattern>(response);
   },
@@ -1521,7 +1521,7 @@ export const learningApi = {
   async dismissPattern(projectId: string, patternId: string): Promise<LearnedPattern> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/learning/patterns/${patternId}/dismiss`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<LearnedPattern>(response);
   },
@@ -1538,7 +1538,7 @@ export const learningApi = {
   async detectPatterns(projectId: string): Promise<{ detected: number }> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/learning/detect`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<{ detected: number }>(response);
   },
@@ -1575,7 +1575,7 @@ export const healthApi = {
   async recalculate(projectId: string): Promise<HealthResult> {
     const response = await fetch(`${API_BASE}/projects/${projectId}/health/recalculate`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse<HealthResult>(response);
   },

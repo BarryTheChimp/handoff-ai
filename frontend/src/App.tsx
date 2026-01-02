@@ -142,6 +142,33 @@ function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        {/* Demo credentials for testing */}
+        <div className="mt-6 pt-6 border-t border-toucan-dark-border">
+          <p className="text-xs text-toucan-grey-400 text-center mb-3">
+            Demo Credentials
+          </p>
+          <div className="bg-toucan-dark rounded-md p-3 text-sm font-mono">
+            <div className="flex justify-between items-center text-toucan-grey-200">
+              <span className="text-toucan-grey-400">Email:</span>
+              <span>gary@toucanlabs.co.uk</span>
+            </div>
+            <div className="flex justify-between items-center text-toucan-grey-200 mt-1">
+              <span className="text-toucan-grey-400">Password:</span>
+              <span>Admin123!</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('gary@toucanlabs.co.uk');
+              setPassword('Admin123!');
+            }}
+            className="w-full mt-3 btn btn-secondary py-2 text-sm"
+          >
+            Use Demo Credentials
+          </button>
+        </div>
       </div>
 
       {/* Version footer */}
