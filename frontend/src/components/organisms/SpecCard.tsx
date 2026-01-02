@@ -104,13 +104,13 @@ export function SpecCard({ spec, stats, onDelete, onExport }: SpecCardProps) {
       onClick={handleView}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-toucan-dark rounded-md">
+      <div className="flex items-start gap-2 mb-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+          <div className="p-2 bg-toucan-dark rounded-md flex-shrink-0">
             <FileIcon size={20} className="text-toucan-orange" />
           </div>
-          <div className="min-w-0">
-            <h3 className="font-medium text-toucan-grey-100 truncate">{spec.name}</h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-medium text-toucan-grey-100 truncate" title={spec.name}>{spec.name}</h3>
             <p className="text-xs text-toucan-grey-400 flex items-center gap-1 mt-0.5">
               <Clock size={12} />
               {formatRelativeTime(spec.uploadedAt)}
@@ -118,8 +118,8 @@ export function SpecCard({ spec, stats, onDelete, onExport }: SpecCardProps) {
           </div>
         </div>
 
-        {/* Menu button */}
-        <div className="relative">
+        {/* Menu button - always visible, flex-shrink-0 to prevent it from being pushed off */}
+        <div className="relative flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -127,7 +127,7 @@ export function SpecCard({ spec, stats, onDelete, onExport }: SpecCardProps) {
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            className="opacity-60 hover:opacity-100 transition-opacity"
           >
             <MoreVertical size={16} />
           </Button>
