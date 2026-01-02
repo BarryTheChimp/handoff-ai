@@ -8,7 +8,7 @@ interface AuthenticatedRequest {
 export async function settingsRoutes(fastify: FastifyInstance) {
   // Get all settings
   fastify.get(
-    '/settings',
+    '/api/settings',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { user } = request as AuthenticatedRequest;
@@ -19,7 +19,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
   // Update branding settings
   fastify.patch<{ Body: Partial<BrandingSettings> }>(
-    '/settings/branding',
+    '/api/settings/branding',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { user } = request as AuthenticatedRequest;
@@ -30,7 +30,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
   // Update Jira settings
   fastify.patch<{ Body: Partial<JiraSettings> }>(
-    '/settings/jira',
+    '/api/settings/jira',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { user } = request as AuthenticatedRequest;
@@ -41,7 +41,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
   // Update export settings
   fastify.patch<{ Body: Partial<ExportSettings> }>(
-    '/settings/export',
+    '/api/settings/export',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { user } = request as AuthenticatedRequest;
@@ -52,7 +52,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
   // Upload logo
   fastify.post(
-    '/settings/logo',
+    '/api/settings/logo',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { user } = request as AuthenticatedRequest;
@@ -86,7 +86,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
   // Delete logo
   fastify.delete(
-    '/settings/logo',
+    '/api/settings/logo',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { user } = request as AuthenticatedRequest;
