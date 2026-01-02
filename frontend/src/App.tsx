@@ -15,6 +15,9 @@ import { ToastContainer } from './components/organisms/ToastContainer';
 import { CommandPalette } from './components/organisms/CommandPalette';
 import { OperationProgress } from './components/molecules/OperationProgress';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 // Check if user is logged in
 function isAuthenticated(): boolean {
   return localStorage.getItem('auth_token') !== null;
@@ -48,7 +51,7 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

@@ -4,6 +4,9 @@ import { RefreshCw, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Spinner } from '../atoms/Spinner';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface Entity {
   id: string;
   name: string;
@@ -70,7 +73,7 @@ export function RelationshipMap({ specId, onEntityClick, className }: Relationsh
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/specs/${specId}/relationships`, {
+      const response = await fetch(`${API_BASE}/specs/${specId}/relationships`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -234,7 +237,7 @@ export function RelationshipMap({ specId, onEntityClick, className }: Relationsh
   const handleRefresh = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch(`/api/specs/${specId}/relationships/refresh`, {
+      await fetch(`${API_BASE}/specs/${specId}/relationships/refresh`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -5,6 +5,9 @@ import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
 import { clsx } from 'clsx';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface FileWithMeta {
   file: File;
   isPrimary: boolean;
@@ -152,7 +155,7 @@ export function BatchUploadModal({
       }
 
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/projects/${projectId}/specs/batch`, {
+      const response = await fetch(`${API_BASE}/projects/${projectId}/specs/batch`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

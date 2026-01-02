@@ -6,6 +6,9 @@ import { Badge, SizeBadge } from '../atoms/Badge';
 import { useToastStore } from '../../stores/toastStore';
 import type { SizeEstimate } from '../../types/workItem';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface SplitSuggestion {
   title: string;
   description: string;
@@ -67,7 +70,7 @@ export function StorySplitAssistant({
 
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch(`/api/workitems/${workItemId}/split-analysis`, {
+        const response = await fetch(`${API_BASE}/workitems/${workItemId}/split-analysis`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -101,7 +104,7 @@ export function StorySplitAssistant({
       const token = localStorage.getItem('auth_token');
       const suggestions = Array.from(selectedSuggestions).map((i) => analysis.suggestions[i]);
 
-      const response = await fetch(`/api/workitems/${workItemId}/split`, {
+      const response = await fetch(`${API_BASE}/workitems/${workItemId}/split`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

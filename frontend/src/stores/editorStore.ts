@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import type { WorkItem } from '../types/workItem';
 import { useHistoryStore } from './historyStore';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 // Fields that can be edited
 type EditableField = 'title' | 'description' | 'acceptanceCriteria' | 'technicalNotes' | 'status' | 'sizeEstimate';
 
@@ -34,7 +37,7 @@ const SAVE_DEBOUNCE_MS = 2000;
 // API client for saving (will be implemented in services)
 async function saveWorkItem(id: string, changes: Partial<WorkItem>): Promise<WorkItem> {
   const token = localStorage.getItem('auth_token');
-  const response = await fetch(`/api/workitems/${id}`, {
+  const response = await fetch(`${API_BASE}/workitems/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

@@ -5,6 +5,9 @@ import { Split, Sparkles } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { WorkItem } from '../../types/workItem';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface SplitModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -55,7 +58,7 @@ export function SplitModal({ isOpen, onClose, item, onSplit }: SplitModalProps) 
 
     try {
       // Call AI to generate split suggestions
-      const response = await fetch('/api/workitems/suggest-split', {
+      const response = await fetch(`${API_BASE}/workitems/suggest-split`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

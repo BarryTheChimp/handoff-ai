@@ -5,6 +5,9 @@ import { Merge, Sparkles } from 'lucide-react';
 import { SizeBadge } from '../atoms/Badge';
 import type { WorkItem } from '../../types/workItem';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface MergeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,7 +46,7 @@ export function MergeModal({ isOpen, onClose, items, onMerge }: MergeModalProps)
 
     try {
       // Call AI to generate merge suggestion
-      const response = await fetch('/api/workitems/suggest-merge', {
+      const response = await fetch(`${API_BASE}/workitems/suggest-merge`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

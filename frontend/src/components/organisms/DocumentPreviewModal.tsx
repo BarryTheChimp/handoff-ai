@@ -4,6 +4,9 @@ import { clsx } from 'clsx';
 import { Modal } from '../atoms/Modal';
 import { Spinner } from '../atoms/Spinner';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface DocumentSection {
   id: string;
   title: string;
@@ -42,7 +45,7 @@ export function DocumentPreviewModal({
 
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch(`/api/specs/${specId}/sections`, {
+        const response = await fetch(`${API_BASE}/specs/${specId}/sections`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

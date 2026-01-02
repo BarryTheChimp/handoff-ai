@@ -5,6 +5,9 @@ import { ExternalLink, Upload, Trash2, Check, Save, Palette } from 'lucide-react
 import { Spinner } from '../components/atoms/Spinner';
 import { useToastStore } from '../stores/toastStore';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 // App version - update this when releasing
 const APP_VERSION = '1.0.0';
 const BUILD_DATE = '2024-12';
@@ -53,7 +56,7 @@ export function SettingsPage() {
     const fetchSettings = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch('/api/settings', {
+        const response = await fetch(`${API_BASE}/settings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -82,7 +85,7 @@ export function SettingsPage() {
       const token = localStorage.getItem('auth_token');
 
       // Save branding
-      await fetch('/api/settings/branding', {
+      await fetch(`${API_BASE}/settings/branding`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +95,7 @@ export function SettingsPage() {
       });
 
       // Save export settings
-      await fetch('/api/settings/export', {
+      await fetch(`${API_BASE}/settings/export`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +121,7 @@ export function SettingsPage() {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/settings/logo', {
+      const response = await fetch(`${API_BASE}/settings/logo`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -139,7 +142,7 @@ export function SettingsPage() {
   const handleDeleteLogo = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch('/api/settings/logo', {
+      await fetch(`${API_BASE}/settings/logo`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

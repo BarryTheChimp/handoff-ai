@@ -5,6 +5,9 @@ import { Spinner } from '../atoms/Spinner';
 import { Badge } from '../atoms/Badge';
 import { useToastStore } from '../../stores/toastStore';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 interface DuplicatePair {
   item1Id: string;
   item1Title: string;
@@ -65,7 +68,7 @@ export function DuplicateDetector({
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/specs/${specId}/duplicates`, {
+      const response = await fetch(`${API_BASE}/specs/${specId}/duplicates`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -93,7 +96,7 @@ export function DuplicateDetector({
       const token = localStorage.getItem('auth_token');
 
       // First, get AI analysis for merged content
-      const analyzeResponse = await fetch(`/api/specs/${specId}/duplicates/analyze`, {
+      const analyzeResponse = await fetch(`${API_BASE}/specs/${specId}/duplicates/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +118,7 @@ export function DuplicateDetector({
       }
 
       // Execute merge
-      const mergeResponse = await fetch('/api/workitems/merge', {
+      const mergeResponse = await fetch(`${API_BASE}/workitems/merge`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

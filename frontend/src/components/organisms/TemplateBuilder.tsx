@@ -18,6 +18,9 @@ import { clsx } from 'clsx';
 import { Spinner } from '../atoms/Spinner';
 import { useToastStore } from '../../stores/toastStore';
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 type ACFormat = 'gherkin' | 'bullets' | 'checklist';
 
 interface CustomFieldDefinition {
@@ -94,7 +97,7 @@ export function TemplateBuilder({ projectId, templateId, onSave, onCancel }: Tem
     const fetchTemplate = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch(`/api/templates/${templateId}`, {
+        const response = await fetch(`${API_BASE}/templates/${templateId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -126,7 +129,7 @@ export function TemplateBuilder({ projectId, templateId, onSave, onCancel }: Tem
 
     try {
       const token = localStorage.getItem('auth_token');
-      const url = templateId ? `/api/templates/${templateId}` : '/api/templates';
+      const url = templateId ? `${API_BASE}/templates/${templateId}` : `${API_BASE}/templates`;
       const method = templateId ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
