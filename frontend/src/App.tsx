@@ -86,7 +86,7 @@ function LoginPage() {
           <span className="text-toucan-orange">Handoff</span> AI
         </h1>
         <p className="text-sm text-toucan-grey-400 text-center mb-1">
-          by Toucan Labs
+          by Gary Neville
         </p>
         <p className="text-toucan-grey-400 text-center mb-6">
           Sign in to continue

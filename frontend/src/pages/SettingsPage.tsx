@@ -401,7 +401,7 @@ export function SettingsPage() {
               </div>
               <div>
                 <p className="text-toucan-grey-100 font-medium">Handoff AI</p>
-                <p className="text-sm text-toucan-grey-400">by Toucan Labs</p>
+                <p className="text-sm text-toucan-grey-400">by Gary Neville</p>
               </div>
             </div>
           </div>
