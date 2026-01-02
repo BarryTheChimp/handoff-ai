@@ -44,18 +44,35 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
         // Get form fields
         const fields = data.fields;
 
-        // Extract projectId from fields (handle both object and string formats)
+        // Debug: log the fields structure
+        console.log('Upload fields received:', JSON.stringify(fields, null, 2));
+        console.log('Fields keys:', Object.keys(fields));
+
+        // Extract projectId from fields (handle all possible formats)
         const projectIdField = fields.projectId;
+        console.log('projectIdField:', projectIdField, 'type:', typeof projectIdField);
+
         let projectId: string | null = null;
         if (projectIdField) {
           if (typeof projectIdField === 'string') {
             projectId = projectIdField;
+          } else if (Array.isArray(projectIdField)) {
+            // Handle array format (multiple values)
+            const first = projectIdField[0];
+            if (typeof first === 'string') {
+              projectId = first;
+            } else if (first && 'value' in first) {
+              projectId = first.value;
+            }
           } else if ('value' in projectIdField && typeof projectIdField.value === 'string') {
             projectId = projectIdField.value;
           }
         }
 
+        console.log('Extracted projectId:', projectId);
+
         if (!projectId) {
+          console.log('projectId is null/empty, returning 400');
           return reply.status(400).send({
             error: {
               code: 'VALIDATION_ERROR',
