@@ -419,12 +419,12 @@ export function SettingsPage() {
 
           <div className="mt-4 pt-4 border-t border-toucan-dark-border">
             <a
-              href="https://toucanlabs.io"
+              href="https://startworldventures.com"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-sm text-toucan-orange hover:text-toucan-orange-light"
             >
-              Visit Toucan Labs
+              Visit Start World Ventures
               <ExternalLink size={14} />
             </a>
           </div>
