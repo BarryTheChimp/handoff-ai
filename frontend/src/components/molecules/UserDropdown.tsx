@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, HelpCircle, Users } from 'lucide-react';
 import type { User } from '../../hooks/useAuth';
 
 interface UserDropdownProps {
@@ -84,6 +84,19 @@ export function UserDropdown({ user, onLogout }: UserDropdownProps) {
               <Settings className="w-4 h-4" />
               Settings
             </button>
+            {user.role === 'admin' && (
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/users');
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-toucan-grey-200 hover:bg-toucan-dark flex items-center gap-2"
+                data-testid="users-button"
+              >
+                <Users className="w-4 h-4" />
+                Manage Users
+              </button>
+            )}
             <a
               href="https://github.com/anthropics/claude-code/issues"
               target="_blank"

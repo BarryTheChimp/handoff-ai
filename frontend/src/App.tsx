@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ReviewPage } from './pages/ReviewPage';
@@ -11,6 +11,10 @@ import { PreferencesPage } from './pages/PreferencesPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { WorkBreakdownPage } from './pages/WorkBreakdownPage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { UsersPage } from './pages/UsersPage';
 import { ToastContainer } from './components/organisms/ToastContainer';
 import { CommandPalette } from './components/organisms/CommandPalette';
 import { OperationProgress } from './components/molecules/OperationProgress';
@@ -32,7 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function LoginPage() {
-  const [username, setUsername] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -54,7 +58,7 @@ function LoginPage() {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -64,6 +68,7 @@ function LoginPage() {
       }
 
       localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
       navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -99,20 +104,28 @@ function LoginPage() {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-toucan-grey-200 mb-1">
-              Username
+              Email
             </label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-toucan-dark border border-toucan-dark-border rounded-md px-3 py-2 text-toucan-grey-100 placeholder-toucan-grey-400 focus:outline-none focus:ring-2 focus:ring-toucan-orange"
-              placeholder="admin"
+              placeholder="you@example.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-toucan-grey-200 mb-1">
-              Password
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-toucan-grey-200">
+                Password
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-toucan-orange hover:text-toucan-orange-light"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               value={password}
@@ -135,16 +148,6 @@ function LoginPage() {
       <p className="mt-8 text-xs text-toucan-grey-600">
         Version 1.0.0
       </p>
-
-      {/* Demo credentials */}
-      <div className="mt-4 p-3 bg-toucan-dark-lighter border border-toucan-dark-border rounded-lg text-center">
-        <p className="text-xs text-toucan-grey-400 mb-1">Demo Credentials</p>
-        <p className="text-sm text-toucan-grey-200">
-          <span className="text-toucan-grey-400">Username:</span> admin
-          <span className="mx-2 text-toucan-grey-600">|</span>
-          <span className="text-toucan-grey-400">Password:</span> admin123
-        </p>
-      </div>
     </div>
   );
 }
@@ -155,6 +158,10 @@ export function App() {
       <Routes>
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/invite/:token" element={<AcceptInvitePage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
         <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
         <Route path="/review/:specId" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
         <Route path="/spec-groups/:groupId" element={<ProtectedRoute><GroupStatusPage /></ProtectedRoute>} />

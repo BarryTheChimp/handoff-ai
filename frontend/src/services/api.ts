@@ -46,11 +46,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // Auth API
 export const authApi = {
-  async login(username: string, password: string) {
+  async login(email: string, password: string) {
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email, password }),
     });
     const data = await handleResponse<{ token: string; user: unknown }>(response);
     localStorage.setItem('auth_token', data.token);
@@ -66,6 +66,7 @@ export const authApi = {
 
   logout() {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
   },
 };
 

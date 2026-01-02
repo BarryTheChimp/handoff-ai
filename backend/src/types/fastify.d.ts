@@ -1,4 +1,4 @@
-import { SafeUser } from '../config/users.js';
+import { SafeUser } from '../services/AuthService.js';
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {

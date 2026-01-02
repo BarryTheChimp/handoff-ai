@@ -23,6 +23,27 @@ enum SpecStatus {
   error
 }
 
+// =============================================================================
+// USER MANAGEMENT ENUMS
+// =============================================================================
+
+enum UserRole {
+  admin
+  member
+}
+
+enum UserStatus {
+  pending
+  active
+  suspended
+}
+
+enum AuthProvider {
+  email
+  google
+  microsoft
+}
+
 enum WorkItemType {
   epic
   feature
@@ -41,6 +62,74 @@ enum SizeEstimate {
   M
   L
   XL
+}
+
+// =============================================================================
+// USER MANAGEMENT
+// =============================================================================
+
+/// User - Authenticated users of the platform
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  name          String?
+  passwordHash  String?      @map("password_hash")
+  role          UserRole     @default(member)
+  status        UserStatus   @default(pending)
+  emailVerified Boolean      @default(false) @map("email_verified")
+  avatarUrl     String?      @map("avatar_url")
+
+  // OAuth
+  authProvider  AuthProvider @default(email) @map("auth_provider")
+  googleId      String?      @unique @map("google_id")
+  microsoftId   String?      @unique @map("microsoft_id")
+
+  // Timestamps
+  lastLoginAt   DateTime?    @map("last_login_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  invitationsSent UserInvitation[] @relation("InvitedBy")
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+/// UserInvitation - Pending invitations to join the platform
+model UserInvitation {
+  id          String    @id @default(uuid())
+  email       String
+  token       String    @unique
+  role        UserRole  @default(member)
+  invitedById String    @map("invited_by_id")
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("user_invitations")
+}
+
+/// PasswordResetToken - Tokens for password reset flow
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 // =============================================================================

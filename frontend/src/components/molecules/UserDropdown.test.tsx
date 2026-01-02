@@ -1,34 +1,42 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import type { User } from '../../hooks/useAuth';
 
 const mockUser: User = {
   id: 'user-1',
-  username: 'testuser',
-  displayName: 'Test User',
   email: 'test@example.com',
+  name: 'Test User',
+  displayName: 'Test User',
   role: 'admin',
+  status: 'active',
+  avatarUrl: null,
+  authProvider: 'email',
+};
+
+const renderWithRouter = (ui: React.ReactElement) => {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
 };
 
 describe('UserDropdown', () => {
   it('renders user avatar with first letter of display name', () => {
     const onLogout = vi.fn();
-    render(<UserDropdown user={mockUser} onLogout={onLogout} />);
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
 
     expect(screen.getByText('T')).toBeInTheDocument();
   });
 
   it('renders display name on larger screens', () => {
     const onLogout = vi.fn();
-    render(<UserDropdown user={mockUser} onLogout={onLogout} />);
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
 
     expect(screen.getByText('Test User')).toBeInTheDocument();
   });
 
   it('opens dropdown when clicked', () => {
     const onLogout = vi.fn();
-    render(<UserDropdown user={mockUser} onLogout={onLogout} />);
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
 
     const trigger = screen.getByTestId('user-dropdown-trigger');
     fireEvent.click(trigger);
@@ -38,7 +46,7 @@ describe('UserDropdown', () => {
 
   it('shows user email and role in dropdown', () => {
     const onLogout = vi.fn();
-    render(<UserDropdown user={mockUser} onLogout={onLogout} />);
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
 
     const trigger = screen.getByTestId('user-dropdown-trigger');
     fireEvent.click(trigger);
@@ -49,7 +57,7 @@ describe('UserDropdown', () => {
 
   it('calls onLogout when sign out is clicked', () => {
     const onLogout = vi.fn();
-    render(<UserDropdown user={mockUser} onLogout={onLogout} />);
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
 
     const trigger = screen.getByTestId('user-dropdown-trigger');
     fireEvent.click(trigger);
@@ -62,7 +70,7 @@ describe('UserDropdown', () => {
 
   it('closes dropdown when clicking outside', () => {
     const onLogout = vi.fn();
-    render(
+    renderWithRouter(
       <div>
         <div data-testid="outside">Outside</div>
         <UserDropdown user={mockUser} onLogout={onLogout} />
@@ -81,7 +89,7 @@ describe('UserDropdown', () => {
 
   it('closes dropdown on Escape key', () => {
     const onLogout = vi.fn();
-    render(<UserDropdown user={mockUser} onLogout={onLogout} />);
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
 
     const trigger = screen.getByTestId('user-dropdown-trigger');
     fireEvent.click(trigger);
@@ -91,5 +99,27 @@ describe('UserDropdown', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(screen.queryByTestId('user-dropdown-menu')).not.toBeInTheDocument();
+  });
+
+  it('shows Manage Users link for admin users', () => {
+    const onLogout = vi.fn();
+    renderWithRouter(<UserDropdown user={mockUser} onLogout={onLogout} />);
+
+    const trigger = screen.getByTestId('user-dropdown-trigger');
+    fireEvent.click(trigger);
+
+    expect(screen.getByTestId('users-button')).toBeInTheDocument();
+    expect(screen.getByText('Manage Users')).toBeInTheDocument();
+  });
+
+  it('hides Manage Users link for non-admin users', () => {
+    const onLogout = vi.fn();
+    const memberUser: User = { ...mockUser, role: 'member' };
+    renderWithRouter(<UserDropdown user={memberUser} onLogout={onLogout} />);
+
+    const trigger = screen.getByTestId('user-dropdown-trigger');
+    fireEvent.click(trigger);
+
+    expect(screen.queryByTestId('users-button')).not.toBeInTheDocument();
   });
 });

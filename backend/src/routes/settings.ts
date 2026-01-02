@@ -1,18 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import { brandingService, BrandingSettings, JiraSettings, ExportSettings } from '../services/BrandingService.js';
 
-interface AuthenticatedRequest {
-  user: { id: string; username: string };
-}
-
 export async function settingsRoutes(fastify: FastifyInstance) {
   // Get all settings
   fastify.get(
     '/api/settings',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const { user } = request as AuthenticatedRequest;
-      const settings = await brandingService.getSettings(user.id);
+      const settings = await brandingService.getSettings(request.user.id);
       return reply.send({ data: settings });
     }
   );
@@ -22,8 +17,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
     '/api/settings/branding',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const { user } = request as AuthenticatedRequest;
-      const branding = await brandingService.updateBranding(user.id, request.body);
+      const branding = await brandingService.updateBranding(request.user.id, request.body);
       return reply.send({ data: branding });
     }
   );
@@ -33,8 +27,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
     '/api/settings/jira',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const { user } = request as AuthenticatedRequest;
-      const jira = await brandingService.updateJiraSettings(user.id, request.body);
+      const jira = await brandingService.updateJiraSettings(request.user.id, request.body);
       return reply.send({ data: jira });
     }
   );
@@ -44,8 +37,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
     '/api/settings/export',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const { user } = request as AuthenticatedRequest;
-      const exportSettings = await brandingService.updateExportSettings(user.id, request.body);
+      const exportSettings = await brandingService.updateExportSettings(request.user.id, request.body);
       return reply.send({ data: exportSettings });
     }
   );
@@ -55,7 +47,6 @@ export async function settingsRoutes(fastify: FastifyInstance) {
     '/api/settings/logo',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const { user } = request as AuthenticatedRequest;
 
       const data = await request.file();
       if (!data) {
@@ -79,7 +70,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const logoUrl = await brandingService.uploadLogo(user.id, buffer, data.mimetype);
+      const logoUrl = await brandingService.uploadLogo(request.user.id, buffer, data.mimetype);
       return reply.send({ data: { logoUrl } });
     }
   );
@@ -89,8 +80,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
     '/api/settings/logo',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const { user } = request as AuthenticatedRequest;
-      await brandingService.deleteLogo(user.id);
+      await brandingService.deleteLogo(request.user.id);
       return reply.status(204).send();
     }
   );

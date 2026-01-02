@@ -3,7 +3,7 @@ import type { DocumentType, ACFormat, Verbosity, TechnicalDepth } from '@prisma/
 import { getKnowledgeService, type CreateGlossaryTermInput, type UpdateGlossaryTermInput, type UpdatePreferencesConfigInput } from '../services/KnowledgeService.js';
 import { getContextBuilder } from '../services/ContextBuilder.js';
 import { storageService } from '../services/StorageService.js';
-import type { SafeUser } from '../config/users.js';
+import type { SafeUser } from '../services/AuthService.js';
 
 // =============================================================================
 // REQUEST BODIES

@@ -30,6 +30,7 @@ import { splitRoutes } from './routes/splits.js';
 import { duplicateRoutes } from './routes/duplicates.js';
 import { analysisRoutes } from './routes/analysis.js';
 import { workBreakdownRoutes } from './routes/work-breakdown.js';
+import { usersRoutes } from './routes/users.js';
 
 // Extend Fastify with authenticate decorator
 declare module 'fastify' {
@@ -128,6 +129,7 @@ async function buildApp() {
   await fastify.register(duplicateRoutes);
   await fastify.register(analysisRoutes);
   await fastify.register(workBreakdownRoutes);
+  await fastify.register(usersRoutes);
 
   // Health check endpoint
   fastify.get('/', async (_request, _reply) => {

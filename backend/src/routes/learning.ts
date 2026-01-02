@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { EditField } from '@prisma/client';
 import { getLearningService } from '../services/LearningService.js';
-import type { SafeUser } from '../config/users.js';
+import type { SafeUser } from '../services/AuthService.js';
 
 // =============================================================================
 // REQUEST BODIES
