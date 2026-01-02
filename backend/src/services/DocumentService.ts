@@ -24,7 +24,7 @@ export class DocumentValidationError extends Error {
 }
 
 export interface UploadResult {
-  specId: string;
+  id: string;
   name: string;
   fileType: string;
   fileSize: number;
@@ -110,7 +110,7 @@ export function createDocumentService(storage: StorageService = storageService):
       });
 
       return {
-        specId: spec.id,
+        id: spec.id,
         name: spec.name,
         fileType: spec.fileType,
         fileSize: spec.fileSize,

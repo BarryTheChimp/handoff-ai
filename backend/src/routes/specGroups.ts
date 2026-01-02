@@ -119,9 +119,9 @@ export async function specGroupRoutes(fastify: FastifyInstance): Promise<void> {
             uploadedBy: user.id,
           });
 
-          specIds.push(spec.specId);
+          specIds.push(spec.id);
           uploadedSpecs.push({
-            id: spec.specId,
+            id: spec.id,
             filename: file.filename,
             status: 'uploaded',
             isPrimary: i === primarySpecIndex,
