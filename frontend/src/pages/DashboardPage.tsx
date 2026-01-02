@@ -334,7 +334,7 @@ export function DashboardPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.yaml,.yml,.json,.md,.markdown,.docx"
+              accept=".pdf,.yaml,.yml,.json,.md,.markdown,.docx,.txt"
               onChange={handleFileChange}
               className="hidden"
             />

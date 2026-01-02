@@ -11,6 +11,9 @@ const ALLOWED_EXTENSIONS: Record<string, number> = {
   '.yaml': 10 * 1024 * 1024,  // 10MB
   '.yml': 10 * 1024 * 1024,   // 10MB
   '.json': 10 * 1024 * 1024,  // 10MB
+  '.md': 10 * 1024 * 1024,    // 10MB
+  '.markdown': 10 * 1024 * 1024, // 10MB
+  '.txt': 10 * 1024 * 1024,   // 10MB
 };
 
 export class DocumentValidationError extends Error {
