@@ -12,6 +12,12 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
+// Get auth headers without Content-Type (for requests without body)
+function getAuthOnlyHeaders(): HeadersInit {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 // Generic API error
 export class ApiError extends Error {
   constructor(
@@ -498,7 +504,7 @@ export const specGroupsApi = {
   async analyze(groupId: string): Promise<{ message: string; statusUrl: string }> {
     const response = await fetch(`${API_BASE}/spec-groups/${groupId}/analyze`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: getAuthOnlyHeaders(),
     });
     return handleResponse(response);
   },
