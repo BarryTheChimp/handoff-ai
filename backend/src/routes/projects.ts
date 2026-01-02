@@ -420,6 +420,7 @@ export async function projectsRoutes(app: FastifyInstance): Promise<void> {
         return reply
           .header('Content-Type', mimeTypes[ext] || 'application/octet-stream')
           .header('Cache-Control', 'public, max-age=31536000')
+          .header('Cross-Origin-Resource-Policy', 'cross-origin')
           .send(buffer);
       } catch {
         return reply.status(404).send({

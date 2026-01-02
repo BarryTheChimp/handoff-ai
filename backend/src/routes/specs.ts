@@ -44,12 +44,18 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
         // Get form fields
         const fields = data.fields;
 
-        // Extract projectId from fields
+        // Extract projectId from fields (handle both object and string formats)
         const projectIdField = fields.projectId;
-        const projectId =
-          projectIdField && 'value' in projectIdField ? projectIdField.value : null;
+        let projectId: string | null = null;
+        if (projectIdField) {
+          if (typeof projectIdField === 'string') {
+            projectId = projectIdField;
+          } else if ('value' in projectIdField && typeof projectIdField.value === 'string') {
+            projectId = projectIdField.value;
+          }
+        }
 
-        if (!projectId || typeof projectId !== 'string') {
+        if (!projectId) {
           return reply.status(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -72,10 +78,16 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
           });
         }
 
-        // Extract specType from fields (optional)
+        // Extract specType from fields (optional, handle both formats)
         const specTypeField = fields.specType;
-        const specType =
-          specTypeField && 'value' in specTypeField ? specTypeField.value : 'api-spec';
+        let specType = 'api-spec';
+        if (specTypeField) {
+          if (typeof specTypeField === 'string') {
+            specType = specTypeField;
+          } else if ('value' in specTypeField && typeof specTypeField.value === 'string') {
+            specType = specTypeField.value;
+          }
+        }
 
         // Read file buffer
         const buffer = await data.toBuffer();

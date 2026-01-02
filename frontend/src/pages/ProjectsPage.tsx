@@ -135,6 +135,15 @@ export function ProjectsPage() {
               );
               setEditingProject(null);
             }}
+            onDelete={(deletedId) => {
+              setProjects((prev) => prev.filter((p) => p.id !== deletedId));
+              setEditingProject(null);
+              // Clear selection if the deleted project was selected
+              const selectedId = localStorage.getItem('selected_project_id');
+              if (selectedId === deletedId) {
+                localStorage.removeItem('selected_project_id');
+              }
+            }}
           />
         )}
       </main>
