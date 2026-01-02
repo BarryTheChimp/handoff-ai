@@ -151,18 +151,18 @@ function LoginPage() {
           <div className="bg-toucan-dark rounded-md p-3 text-sm font-mono">
             <div className="flex justify-between items-center text-toucan-grey-200">
               <span className="text-toucan-grey-400">Email:</span>
-              <span>gary@toucanlabs.co.uk</span>
+              <span>demo@handoff.ai</span>
             </div>
             <div className="flex justify-between items-center text-toucan-grey-200 mt-1">
               <span className="text-toucan-grey-400">Password:</span>
-              <span>Admin123!</span>
+              <span>Demo123!</span>
             </div>
           </div>
           <button
             type="button"
             onClick={() => {
-              setEmail('gary@toucanlabs.co.uk');
-              setPassword('Admin123!');
+              setEmail('demo@handoff.ai');
+              setPassword('Demo123!');
             }}
             className="w-full mt-3 btn btn-secondary py-2 text-sm"
           >

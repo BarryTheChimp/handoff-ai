@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
+import bcrypt from 'bcrypt';
 import 'dotenv/config';
 import { prisma, checkDatabaseConnection, disconnectDatabase } from './lib/prisma.js';
 import { authRoutes } from './routes/auth.js';
@@ -183,8 +184,50 @@ async function buildApp() {
   return fastify;
 }
 
+/**
+ * Seed demo user on startup (idempotent - only creates if doesn't exist)
+ */
+async function seedDemoUser(): Promise<void> {
+  const email = 'demo@handoff.ai';
+  const password = 'Demo123!';
+  const name = 'Demo User';
+
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      console.log('Demo user already exists');
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await prisma.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        role: 'admin',
+        status: 'active',
+        emailVerified: true,
+        authProvider: 'email',
+      },
+    });
+
+    console.log(`Demo user created: ${email}`);
+  } catch (error) {
+    console.error('Failed to seed demo user:', error);
+    // Don't fail startup if seeding fails
+  }
+}
+
 async function start(): Promise<void> {
   try {
+    // Seed demo user before starting
+    await seedDemoUser();
+
     const app = await buildApp();
 
     // Graceful shutdown
