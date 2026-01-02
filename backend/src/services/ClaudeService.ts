@@ -187,27 +187,40 @@ export function createClaudeService(): ClaudeService {
       // Try to extract JSON from the response
       let jsonStr = response.trim();
 
-      // Remove markdown code blocks if present
-      if (jsonStr.startsWith('```json')) {
-        jsonStr = jsonStr.slice(7);
-      } else if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.slice(3);
+      // Remove markdown code blocks if present (various formats)
+      const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch && codeBlockMatch[1]) {
+        jsonStr = codeBlockMatch[1].trim();
+      } else {
+        // Fallback: try to find JSON object or array boundaries
+        const jsonMatch = jsonStr.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        if (jsonMatch && jsonMatch[1]) {
+          jsonStr = jsonMatch[1];
+        }
       }
-      if (jsonStr.endsWith('```')) {
-        jsonStr = jsonStr.slice(0, -3);
-      }
-      jsonStr = jsonStr.trim();
 
+      // First attempt: direct parse
       try {
         return JSON.parse(jsonStr) as T;
-      } catch (parseError) {
-        console.error('[Claude] JSON parse error:', parseError);
-        console.error('[Claude] Raw response:', response.slice(0, 500));
-        throw new ClaudeError(
-          'Failed to parse JSON response from Claude',
-          'JSON_PARSE_ERROR',
-          false
-        );
+      } catch (firstParseError) {
+        // Second attempt: try to fix common issues
+        try {
+          // Fix unescaped newlines in strings (common with markdown content)
+          const fixedStr = jsonStr
+            .replace(/\n(?!["\s\]}])/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
+          return JSON.parse(fixedStr) as T;
+        } catch (secondParseError) {
+          console.error('[Claude] JSON parse error:', firstParseError);
+          console.error('[Claude] Raw response (first 1000 chars):', response.slice(0, 1000));
+          console.error('[Claude] Extracted JSON (first 500 chars):', jsonStr.slice(0, 500));
+          throw new ClaudeError(
+            'Failed to parse JSON response from Claude',
+            'JSON_PARSE_ERROR',
+            false
+          );
+        }
       }
     },
   };
