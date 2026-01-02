@@ -32,8 +32,10 @@ export function createEmailService(): EmailService {
     }
 
     try {
-      // In development, use Resend's test sender if domain isn't verified
-      const fromAddress = process.env.NODE_ENV === 'production'
+      // Use Resend's test sender unless a verified domain is configured
+      // To use custom domain: verify it in Resend dashboard, then set EMAIL_FROM_VERIFIED=true
+      const useVerifiedDomain = process.env.EMAIL_FROM_VERIFIED === 'true';
+      const fromAddress = useVerifiedDomain
         ? EMAIL_FROM
         : 'Handoff AI <onboarding@resend.dev>';
 
