@@ -30,9 +30,31 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const data = await request.file();
+        // Parse multipart using parts() for reliable field extraction
+        const parts = request.parts();
+        let fileData: { filename: string; buffer: Buffer } | null = null;
+        let projectId: string | null = null;
+        let specType = 'api-spec';
 
-        if (!data) {
+        for await (const part of parts) {
+          if (part.type === 'file') {
+            const buffer = await part.toBuffer();
+            fileData = {
+              filename: part.filename ?? 'unknown',
+              buffer,
+            };
+          } else {
+            // Field - part.value is the string value
+            const value = part.value as string;
+            if (part.fieldname === 'projectId') {
+              projectId = value;
+            } else if (part.fieldname === 'specType') {
+              specType = value;
+            }
+          }
+        }
+
+        if (!fileData) {
           return reply.status(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -41,38 +63,7 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
           });
         }
 
-        // Get form fields
-        const fields = data.fields;
-
-        // Debug: log the fields structure
-        console.log('Upload fields received:', JSON.stringify(fields, null, 2));
-        console.log('Fields keys:', Object.keys(fields));
-
-        // Extract projectId from fields (handle all possible formats)
-        const projectIdField = fields.projectId;
-        console.log('projectIdField:', projectIdField, 'type:', typeof projectIdField);
-
-        let projectId: string | null = null;
-        if (projectIdField) {
-          if (typeof projectIdField === 'string') {
-            projectId = projectIdField;
-          } else if (Array.isArray(projectIdField)) {
-            // Handle array format (multiple values)
-            const first = projectIdField[0];
-            if (typeof first === 'string') {
-              projectId = first;
-            } else if (first && 'value' in first) {
-              projectId = first.value;
-            }
-          } else if ('value' in projectIdField && typeof projectIdField.value === 'string') {
-            projectId = projectIdField.value;
-          }
-        }
-
-        console.log('Extracted projectId:', projectId);
-
         if (!projectId) {
-          console.log('projectId is null/empty, returning 400');
           return reply.status(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -95,26 +86,12 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
           });
         }
 
-        // Extract specType from fields (optional, handle both formats)
-        const specTypeField = fields.specType;
-        let specType = 'api-spec';
-        if (specTypeField) {
-          if (typeof specTypeField === 'string') {
-            specType = specTypeField;
-          } else if ('value' in specTypeField && typeof specTypeField.value === 'string') {
-            specType = specTypeField.value;
-          }
-        }
-
-        // Read file buffer
-        const buffer = await data.toBuffer();
-
         // Upload the document
         const result = await documentService.upload({
           projectId,
-          filename: data.filename,
-          data: buffer,
-          specType: typeof specType === 'string' ? specType : 'api-spec',
+          filename: fileData.filename,
+          data: fileData.buffer,
+          specType,
           uploadedBy: request.user.id,
         });
 
