@@ -175,7 +175,12 @@ export function DashboardPage() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedProjectId) return;
+    if (!file) return;
+
+    if (!selectedProjectId) {
+      toast.error('No project selected', 'Please select a project before uploading specs.');
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -184,16 +189,26 @@ export function DashboardPage() {
       formData.append('projectId', selectedProjectId);
 
       const API_BASE = import.meta.env.VITE_API_URL || '/api';
+      const token = localStorage.getItem('auth_token');
+
+      if (!token) {
+        toast.error('Not authenticated', 'Please log in again.');
+        navigate('/login');
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/specs`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData?.error?.message || `Server error: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       const { data: newSpec } = await response.json() as { data: Spec };
@@ -207,7 +222,8 @@ export function DashboardPage() {
       await loadSpecs();
     } catch (err) {
       console.error('Failed to upload spec:', err);
-      toast.error('Upload failed', `Could not upload "${file.name}". Please try again.`);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error('Upload failed', message);
     } finally {
       setIsUploading(false);
       // Reset file input

@@ -998,6 +998,7 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
+  logoUrl: string | null;
   jiraProjectKey: string | null;
   specCount: number;
   workItemCount: number;
@@ -1067,6 +1068,37 @@ export const projectsApi = {
         response.status
       );
     }
+  },
+
+  async uploadLogo(projectId: string, file: File): Promise<{ logoUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE}/projects/${projectId}/logo`, {
+      method: 'POST',
+      headers: getAuthOnlyHeaders(),
+      body: formData,
+    });
+    return handleResponse<{ logoUrl: string }>(response);
+  },
+
+  async deleteLogo(projectId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/logo`, {
+      method: 'DELETE',
+      headers: getAuthOnlyHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Delete failed', code: 'UNKNOWN' } }));
+      throw new ApiError(
+        error.error?.message || 'Delete logo failed',
+        error.error?.code || 'UNKNOWN',
+        response.status
+      );
+    }
+  },
+
+  getLogoUrl(projectId: string): string {
+    return `${API_BASE}/projects/${projectId}/logo`;
   },
 };
 
@@ -1235,6 +1267,10 @@ export const knowledgeApi = {
       const error = await response.json().catch(() => ({ error: { message: 'Delete failed' } }));
       throw new ApiError(error.error?.message || 'Delete failed', 'DELETE_FAILED', response.status);
     }
+  },
+
+  getDocumentPreviewUrl(projectId: string, docId: string): string {
+    return `${API_BASE}/projects/${projectId}/reference-docs/${docId}/preview`;
   },
 
   // Team Preferences Config

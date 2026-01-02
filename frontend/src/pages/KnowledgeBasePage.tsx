@@ -14,6 +14,8 @@ import {
   FileUp,
   ToggleLeft,
   ToggleRight,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '../components/atoms/Button';
@@ -577,49 +579,65 @@ function DocumentsTab({ projectId }: { projectId: string }) {
         </div>
       ) : (
         <div className="space-y-2">
-          {documents.map((doc) => (
-            <div
-              key={doc.id}
-              className={clsx(
-                'flex items-center justify-between gap-4 p-4 rounded-lg border transition-colors',
-                doc.isActive
-                  ? 'bg-toucan-dark-lighter border-toucan-dark-border'
-                  : 'bg-toucan-dark border-toucan-dark-border opacity-60'
-              )}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-toucan-grey-100 truncate">{doc.name}</span>
-                  <span className="text-xs px-2 py-0.5 bg-toucan-dark rounded-full text-toucan-grey-400">
-                    {doc.docType}
-                  </span>
+          {documents.map((doc) => {
+            const previewUrl = knowledgeApi.getDocumentPreviewUrl(projectId, doc.id);
+            const canPreviewInline = ['pdf', 'md', 'markdown', 'txt'].includes(
+              doc.fileName.split('.').pop()?.toLowerCase() || ''
+            );
+
+            return (
+              <div
+                key={doc.id}
+                className={clsx(
+                  'flex items-center justify-between gap-4 p-4 rounded-lg border transition-colors',
+                  doc.isActive
+                    ? 'bg-toucan-dark-lighter border-toucan-dark-border'
+                    : 'bg-toucan-dark border-toucan-dark-border opacity-60'
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-toucan-grey-100 truncate">{doc.name}</span>
+                    <span className="text-xs px-2 py-0.5 bg-toucan-dark rounded-full text-toucan-grey-400">
+                      {doc.docType}
+                    </span>
+                  </div>
+                  <p className="text-xs text-toucan-grey-600 mt-1">
+                    {doc.fileName} - {formatFileSize(doc.fileSize)}
+                  </p>
                 </div>
-                <p className="text-xs text-toucan-grey-600 mt-1">
-                  {doc.fileName} - {formatFileSize(doc.fileSize)}
-                </p>
+                <div className="flex items-center gap-1">
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 text-toucan-grey-400 hover:text-toucan-info hover:bg-toucan-info/10 rounded-md transition-colors"
+                    title={canPreviewInline ? 'View document' : 'Download document'}
+                  >
+                    {canPreviewInline ? <Eye size={16} /> : <ExternalLink size={16} />}
+                  </a>
+                  <button
+                    onClick={() => handleToggleActive(doc)}
+                    className={clsx(
+                      'p-2 rounded-md transition-colors',
+                      doc.isActive
+                        ? 'text-toucan-success hover:bg-toucan-success/10'
+                        : 'text-toucan-grey-400 hover:bg-toucan-dark-lighter'
+                    )}
+                    title={doc.isActive ? 'Disable document' : 'Enable document'}
+                  >
+                    {doc.isActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(doc.id)}
+                    className="p-2 text-toucan-grey-400 hover:text-toucan-error hover:bg-toucan-error/10 rounded-md transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleToggleActive(doc)}
-                  className={clsx(
-                    'p-2 rounded-md transition-colors',
-                    doc.isActive
-                      ? 'text-toucan-success hover:bg-toucan-success/10'
-                      : 'text-toucan-grey-400 hover:bg-toucan-dark-lighter'
-                  )}
-                  title={doc.isActive ? 'Disable document' : 'Enable document'}
-                >
-                  {doc.isActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-                </button>
-                <button
-                  onClick={() => handleDelete(doc.id)}
-                  className="p-2 text-toucan-grey-400 hover:text-toucan-error hover:bg-toucan-error/10 rounded-md transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -798,10 +816,36 @@ function PreferencesTab({ projectId }: { projectId: string }) {
 // CONTEXT SOURCES TAB
 // =============================================================================
 
+// Integration types configuration
+const INTEGRATIONS = [
+  {
+    type: 'jira' as const,
+    name: 'Jira',
+    icon: '🎫',
+    description: 'Import epics, stories, and context from Jira',
+    comingSoon: false,
+  },
+  {
+    type: 'confluence' as const,
+    name: 'Confluence',
+    icon: '📝',
+    description: 'Import documentation and knowledge from Confluence',
+    comingSoon: true,
+  },
+  {
+    type: 'github' as const,
+    name: 'GitHub',
+    icon: '🔧',
+    description: 'Import issues, PRs, and repository context',
+    comingSoon: true,
+  },
+];
+
 function ContextSourcesTab({ projectId }: { projectId: string }) {
   const [sources, setSources] = useState<ContextSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const [connectingType, setConnectingType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadSources = useCallback(async () => {
@@ -820,6 +864,21 @@ function ContextSourcesTab({ projectId }: { projectId: string }) {
   useEffect(() => {
     loadSources();
   }, [loadSources]);
+
+  async function handleConnect(type: string, name: string) {
+    setConnectingType(type);
+    try {
+      await contextSourcesApi.create(projectId, {
+        sourceType: type as 'jira' | 'confluence' | 'github',
+        name,
+      });
+      await loadSources();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to connect ${name}`);
+    } finally {
+      setConnectingType(null);
+    }
+  }
 
   async function handleToggle(source: ContextSource) {
     try {
@@ -846,10 +905,23 @@ function ContextSourcesTab({ projectId }: { projectId: string }) {
     }
   }
 
+  async function handleDelete(sourceId: string) {
+    if (!confirm('Remove this integration?')) return;
+    try {
+      await contextSourcesApi.delete(projectId, sourceId);
+      await loadSources();
+    } catch (err) {
+      console.error('Failed to delete source:', err);
+    }
+  }
+
   function formatDate(dateStr: string | null): string {
     if (!dateStr) return 'Never';
     return new Date(dateStr).toLocaleString();
   }
+
+  // Check which integrations are already connected
+  const connectedTypes = new Set(sources.map(s => s.sourceType));
 
   if (isLoading) {
     return (
@@ -860,7 +932,7 @@ function ContextSourcesTab({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-medium text-toucan-grey-100">Context Sources</h2>
         <p className="text-sm text-toucan-grey-400">
@@ -875,71 +947,131 @@ function ContextSourcesTab({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <div className="space-y-3">
-        {sources.map((source) => (
-          <div
-            key={source.id}
-            className={clsx(
-              'flex items-center justify-between gap-4 p-4 rounded-lg border transition-colors',
-              source.isEnabled
-                ? 'bg-toucan-dark-lighter border-toucan-dark-border'
-                : 'bg-toucan-dark border-toucan-dark-border opacity-60'
-            )}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-toucan-dark flex items-center justify-center text-lg">
-                {source.sourceType === 'specs' && '📋'}
-                {source.sourceType === 'jira' && '🎫'}
-                {source.sourceType === 'document' && '📄'}
-                {source.sourceType === 'confluence' && '📝'}
-                {source.sourceType === 'github' && '🔧'}
-              </div>
-              <div>
-                <h3 className="font-medium text-toucan-grey-100">{source.name}</h3>
-                <p className="text-xs text-toucan-grey-500">
-                  {source.itemCount} items • Last sync: {formatDate(source.lastSyncAt)}
-                </p>
-                {source.lastError && (
-                  <p className="text-xs text-toucan-error mt-1">{source.lastError}</p>
-                )}
-              </div>
-            </div>
+      {/* Connect New Integrations */}
+      <div className="bg-toucan-dark-lighter border border-toucan-dark-border rounded-lg p-4">
+        <h3 className="text-sm font-medium text-toucan-grey-200 mb-3">Connect Integrations</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {INTEGRATIONS.map((integration) => {
+            const isConnected = connectedTypes.has(integration.type);
+            const isConnecting = connectingType === integration.type;
 
-            <div className="flex items-center gap-3">
-              {source.sourceType !== 'jira' && (
-                <button
-                  onClick={() => handleSync(source)}
-                  disabled={syncingIds.has(source.id)}
-                  className="text-sm text-toucan-orange hover:underline disabled:opacity-50"
-                >
-                  {syncingIds.has(source.id) ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    'Sync Now'
-                  )}
-                </button>
-              )}
+            return (
               <button
-                onClick={() => handleToggle(source)}
+                key={integration.type}
+                onClick={() => !integration.comingSoon && !isConnected && handleConnect(integration.type, integration.name)}
+                disabled={isConnected || isConnecting || integration.comingSoon}
                 className={clsx(
-                  'p-2 rounded-md transition-colors',
-                  source.isEnabled
-                    ? 'text-toucan-success hover:bg-toucan-success/10'
-                    : 'text-toucan-grey-400 hover:bg-toucan-dark-lighter'
+                  'flex items-center gap-3 p-4 rounded-lg border text-left transition-all',
+                  isConnected
+                    ? 'bg-toucan-success/10 border-toucan-success/30 cursor-default'
+                    : integration.comingSoon
+                    ? 'bg-toucan-dark border-toucan-dark-border opacity-50 cursor-not-allowed'
+                    : 'bg-toucan-dark border-toucan-dark-border hover:border-toucan-orange/50 hover:bg-toucan-dark/80'
                 )}
-                title={source.isEnabled ? 'Disable source' : 'Enable source'}
               >
-                {source.isEnabled ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                <div className="w-10 h-10 rounded-lg bg-toucan-dark-lighter flex items-center justify-center text-xl">
+                  {integration.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-toucan-grey-100">{integration.name}</span>
+                    {isConnected && (
+                      <span className="text-xs px-1.5 py-0.5 bg-toucan-success/20 text-toucan-success rounded">
+                        Connected
+                      </span>
+                    )}
+                    {integration.comingSoon && (
+                      <span className="text-xs px-1.5 py-0.5 bg-toucan-grey-600/30 text-toucan-grey-400 rounded">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-toucan-grey-500 truncate">{integration.description}</p>
+                </div>
+                {isConnecting && (
+                  <Loader2 size={16} className="animate-spin text-toucan-orange" />
+                )}
               </button>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
 
+      {/* Connected Sources */}
+      {sources.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-toucan-grey-200 mb-3">Connected Sources</h3>
+          <div className="space-y-3">
+            {sources.map((source) => (
+              <div
+                key={source.id}
+                className={clsx(
+                  'flex items-center justify-between gap-4 p-4 rounded-lg border transition-colors',
+                  source.isEnabled
+                    ? 'bg-toucan-dark-lighter border-toucan-dark-border'
+                    : 'bg-toucan-dark border-toucan-dark-border opacity-60'
+                )}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-toucan-dark flex items-center justify-center text-lg">
+                    {source.sourceType === 'specs' && '📋'}
+                    {source.sourceType === 'jira' && '🎫'}
+                    {source.sourceType === 'document' && '📄'}
+                    {source.sourceType === 'confluence' && '📝'}
+                    {source.sourceType === 'github' && '🔧'}
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-toucan-grey-100">{source.name}</h3>
+                    <p className="text-xs text-toucan-grey-500">
+                      {source.itemCount} items - Last sync: {formatDate(source.lastSyncAt)}
+                    </p>
+                    {source.lastError && (
+                      <p className="text-xs text-toucan-error mt-1">{source.lastError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSync(source)}
+                    disabled={syncingIds.has(source.id)}
+                    className="text-sm text-toucan-orange hover:underline disabled:opacity-50"
+                  >
+                    {syncingIds.has(source.id) ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      'Sync'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleToggle(source)}
+                    className={clsx(
+                      'p-2 rounded-md transition-colors',
+                      source.isEnabled
+                        ? 'text-toucan-success hover:bg-toucan-success/10'
+                        : 'text-toucan-grey-400 hover:bg-toucan-dark-lighter'
+                    )}
+                    title={source.isEnabled ? 'Disable source' : 'Enable source'}
+                  >
+                    {source.isEnabled ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(source.id)}
+                    className="p-2 text-toucan-grey-400 hover:text-toucan-error hover:bg-toucan-error/10 rounded-md transition-colors"
+                    title="Remove integration"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {sources.length === 0 && (
-        <div className="text-center py-12">
-          <Settings2 size={48} className="text-toucan-grey-600 mx-auto mb-4" />
-          <p className="text-toucan-grey-400">No context sources configured</p>
+        <div className="text-center py-8 text-toucan-grey-400">
+          <p>Connect an integration above to get started</p>
         </div>
       )}
     </div>

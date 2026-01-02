@@ -6,6 +6,7 @@ import { Button } from '../components/atoms/Button';
 import { Spinner } from '../components/atoms/Spinner';
 import { ProjectCard } from '../components/molecules/ProjectCard';
 import { CreateProjectModal } from '../components/molecules/CreateProjectModal';
+import { ProjectSettingsModal } from '../components/organisms/ProjectSettingsModal';
 import { projectsApi, type Project } from '../services/api';
 
 export function ProjectsPage() {
@@ -14,6 +15,7 @@ export function ProjectsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   const loadProjects = useCallback(async () => {
     try {
@@ -108,11 +110,7 @@ export function ProjectsPage() {
                 key={project.id}
                 project={project}
                 onSelect={() => selectProject(project.id)}
-                onEdit={() => {
-                  // For now, just select the project
-                  // TODO: Add project settings page
-                  selectProject(project.id);
-                }}
+                onEdit={() => setEditingProject(project)}
               />
             ))}
           </div>
@@ -124,6 +122,21 @@ export function ProjectsPage() {
           onClose={() => setShowCreate(false)}
           onCreate={handleProjectCreated}
         />
+
+        {/* Edit Modal */}
+        {editingProject && (
+          <ProjectSettingsModal
+            isOpen={!!editingProject}
+            onClose={() => setEditingProject(null)}
+            project={editingProject}
+            onUpdate={(updated) => {
+              setProjects((prev) =>
+                prev.map((p) => (p.id === updated.id ? updated : p))
+              );
+              setEditingProject(null);
+            }}
+          />
+        )}
       </main>
     </div>
   );

@@ -1,11 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { storageService } from '../services/StorageService.js';
+import { extname } from 'path';
 
 interface CreateProjectBody {
   name: string;
   description?: string;
   jiraProjectKey?: string;
 }
+
+// Allowed image types for project logos
+const ALLOWED_LOGO_TYPES = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
+const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB
 
 interface UpdateProjectBody {
   name?: string;
@@ -44,6 +50,7 @@ export async function projectsRoutes(app: FastifyInstance): Promise<void> {
             id: project.id,
             name: project.name,
             description: project.description,
+            logoUrl: project.logoUrl,
             jiraProjectKey: project.jiraProjectKey,
             specCount: project._count.specs,
             workItemCount,
@@ -259,6 +266,169 @@ export async function projectsRoutes(app: FastifyInstance): Promise<void> {
       await prisma.project.delete({ where: { id } });
 
       return reply.status(204).send();
+    }
+  );
+
+  /**
+   * POST /api/projects/:id/logo
+   * Upload a logo for a project
+   */
+  app.post<{ Params: ProjectIdParams }>(
+    '/api/projects/:id/logo',
+    {
+      onRequest: [app.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const project = await prisma.project.findUnique({ where: { id } });
+      if (!project) {
+        return reply.status(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Project not found',
+          },
+        });
+      }
+
+      const data = await request.file();
+      if (!data) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'No file provided',
+          },
+        });
+      }
+
+      const ext = extname(data.filename).toLowerCase();
+      if (!ALLOWED_LOGO_TYPES.includes(ext)) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid file type. Allowed: ${ALLOWED_LOGO_TYPES.join(', ')}`,
+          },
+        });
+      }
+
+      const buffer = await data.toBuffer();
+      if (buffer.length > MAX_LOGO_SIZE) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'File too large. Maximum size is 2MB.',
+          },
+        });
+      }
+
+      // Delete old logo if exists
+      if (project.logoUrl) {
+        try {
+          await storageService.delete(project.logoUrl);
+        } catch {
+          // Ignore if old file doesn't exist
+        }
+      }
+
+      // Save new logo
+      const logoPath = await storageService.save(`projects/${id}`, `logo${ext}`, buffer);
+
+      // Update project with logo URL
+      const updatedProject = await prisma.project.update({
+        where: { id },
+        data: { logoUrl: logoPath },
+      });
+
+      return { data: { logoUrl: updatedProject.logoUrl } };
+    }
+  );
+
+  /**
+   * DELETE /api/projects/:id/logo
+   * Remove the logo from a project
+   */
+  app.delete<{ Params: ProjectIdParams }>(
+    '/api/projects/:id/logo',
+    {
+      onRequest: [app.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const project = await prisma.project.findUnique({ where: { id } });
+      if (!project) {
+        return reply.status(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Project not found',
+          },
+        });
+      }
+
+      if (project.logoUrl) {
+        try {
+          await storageService.delete(project.logoUrl);
+        } catch {
+          // Ignore if file doesn't exist
+        }
+      }
+
+      await prisma.project.update({
+        where: { id },
+        data: { logoUrl: null },
+      });
+
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * GET /api/projects/:id/logo
+   * Serve the project logo
+   */
+  app.get<{ Params: ProjectIdParams }>(
+    '/api/projects/:id/logo',
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const project = await prisma.project.findUnique({
+        where: { id },
+        select: { logoUrl: true },
+      });
+
+      if (!project || !project.logoUrl) {
+        return reply.status(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Logo not found',
+          },
+        });
+      }
+
+      try {
+        const buffer = await storageService.read(project.logoUrl);
+        const ext = extname(project.logoUrl).toLowerCase();
+
+        const mimeTypes: Record<string, string> = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.svg': 'image/svg+xml',
+          '.webp': 'image/webp',
+        };
+
+        return reply
+          .header('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+          .header('Cache-Control', 'public, max-age=31536000')
+          .send(buffer);
+      } catch {
+        return reply.status(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Logo file not found',
+          },
+        });
+      }
     }
   );
 }

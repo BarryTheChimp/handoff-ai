@@ -1,5 +1,5 @@
-import { FileText, Layers, Settings } from 'lucide-react';
-import type { Project } from '../../services/api';
+import { FileText, Layers, Settings, FolderOpen } from 'lucide-react';
+import { projectsApi, type Project } from '../../services/api';
 
 interface ProjectCardProps {
   project: Project;
@@ -24,6 +24,7 @@ function formatTimeAgo(dateString: string): string {
 
 export function ProjectCard({ project, onSelect, onEdit }: ProjectCardProps) {
   const timeAgo = formatTimeAgo(project.updatedAt);
+  const logoUrl = project.logoUrl ? projectsApi.getLogoUrl(project.id) : null;
 
   return (
     <div
@@ -33,30 +34,47 @@ export function ProjectCard({ project, onSelect, onEdit }: ProjectCardProps) {
                  hover:shadow-lg hover:shadow-toucan-orange/5 group"
       data-testid="project-card"
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-4">
+        {/* Project Logo */}
+        <div className="flex-shrink-0">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`${project.name} logo`}
+              className="w-12 h-12 object-contain rounded-lg bg-toucan-dark border border-toucan-dark-border"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-lg bg-toucan-dark border border-toucan-dark-border flex items-center justify-center">
+              <FolderOpen className="w-6 h-6 text-toucan-grey-500" />
+            </div>
+          )}
+        </div>
+
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-toucan-grey-100
-                         group-hover:text-toucan-orange transition-colors truncate">
-            {project.name}
-          </h3>
+          <div className="flex items-start justify-between">
+            <h3 className="text-lg font-semibold text-toucan-grey-100
+                           group-hover:text-toucan-orange transition-colors truncate">
+              {project.name}
+            </h3>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="p-2 text-toucan-grey-500 hover:text-toucan-grey-200
+                         rounded-md hover:bg-toucan-dark ml-2 flex-shrink-0"
+              aria-label="Project settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
           {project.description && (
             <p className="text-sm text-toucan-grey-400 mt-1 line-clamp-2">
               {project.description}
             </p>
           )}
         </div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="p-2 text-toucan-grey-500 hover:text-toucan-grey-200
-                     rounded-md hover:bg-toucan-dark ml-2"
-          aria-label="Project settings"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Stats */}

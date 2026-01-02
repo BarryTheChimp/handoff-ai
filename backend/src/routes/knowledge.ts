@@ -377,6 +377,58 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
+  // Preview/download reference document
+  fastify.get(
+    '/api/projects/:projectId/reference-docs/:docId/preview',
+    { preHandler: [fastify.authenticate] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { docId } = request.params as Record<string, string>;
+
+      try {
+        const doc = await knowledgeService.getReferenceDocument(docId);
+
+        if (!doc) {
+          return reply.status(404).send({
+            error: { code: 'NOT_FOUND', message: 'Document not found' },
+          });
+        }
+
+        const buffer = await storageService.read(doc.filePath);
+        const fileName = doc.fileName;
+        const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+        // Determine content type
+        const mimeTypes: Record<string, string> = {
+          pdf: 'application/pdf',
+          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          md: 'text/markdown; charset=utf-8',
+          markdown: 'text/markdown; charset=utf-8',
+          txt: 'text/plain; charset=utf-8',
+        };
+
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+        // For text files, return content directly
+        if (['md', 'markdown', 'txt'].includes(ext)) {
+          return reply
+            .header('Content-Type', contentType)
+            .send(buffer.toString('utf-8'));
+        }
+
+        // For PDF/DOCX, serve as inline
+        return reply
+          .header('Content-Type', contentType)
+          .header('Content-Disposition', `inline; filename="${fileName}"`)
+          .send(buffer);
+      } catch (error) {
+        console.error('Preview error:', error);
+        return reply.status(410).send({
+          error: { code: 'FILE_GONE', message: 'File is no longer available' },
+        });
+      }
+    }
+  );
+
   // Delete reference document
   fastify.delete(
     '/api/projects/:projectId/reference-docs/:docId',
