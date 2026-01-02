@@ -200,6 +200,52 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
   );
 
   /**
+   * POST /api/specs/:id/reset
+   * Reset a stuck spec (extracting/translating) back to uploaded status
+   */
+  app.post<{ Params: SpecIdParams }>(
+    '/api/specs/:id/reset',
+    {
+      onRequest: [app.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const spec = await documentService.getSpec(id);
+
+      if (!spec) {
+        return reply.status(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Spec not found',
+          },
+        });
+      }
+
+      // Only reset if stuck in processing state
+      if (spec.status !== 'extracting' && spec.status !== 'translating') {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Spec is not stuck. Current status: ${spec.status}`,
+          },
+        });
+      }
+
+      // Reset to 'uploaded' status
+      const updatedSpec = await prisma.spec.update({
+        where: { id },
+        data: {
+          status: 'uploaded',
+          errorMessage: null,
+        },
+      });
+
+      return { data: updatedSpec };
+    }
+  );
+
+  /**
    * PATCH /api/specs/:id/metadata
    * Update spec metadata (questionnaire answers)
    */

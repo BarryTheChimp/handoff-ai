@@ -234,6 +234,17 @@ async function seedDemoUser(): Promise<void> {
 
 async function start(): Promise<void> {
   try {
+    // Check required environment variables
+    const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'CLAUDE_API_KEY'];
+    const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+    if (missingVars.length > 0) {
+      console.error('❌ Missing required environment variables:');
+      missingVars.forEach(v => console.error(`   - ${v}`));
+      console.error('\nPlease set these in your Render environment settings.');
+      process.exit(1);
+    }
+    console.log('✅ All required environment variables present');
+
     // Seed demo user before starting
     await seedDemoUser();
 
