@@ -456,20 +456,12 @@ Create a single, coherent specification document that:
 4. Eliminates true duplicates
 5. Maintains source attribution where helpful
 
-## Output Format
-
-Return JSON with a single field:
-
-{
-  "stitchedContext": "# Unified Specification\\n\\n## Section 1...\\n\\n## Section 2..."
-}
-
-The stitchedContext should be valid Markdown.
-
-Return valid JSON only.`;
+Return ONLY the unified Markdown document. Do not include any explanations or meta-commentary.
+Start directly with the document content (e.g., "# Title" or "## Section").`;
 
       try {
-        const result = await claude.completeJSON<StitchedContextResponse>(prompt, {
+        // Use complete() instead of completeJSON() - markdown doesn't need JSON wrapping
+        const stitchedContext = await claude.complete(prompt, {
           model: 'sonnet',
           temperature: 0.2,
           maxTokens: 8192,
@@ -479,12 +471,12 @@ Return valid JSON only.`;
         await prisma.specGroup.update({
           where: { id: groupId },
           data: {
-            stitchedContext: result.stitchedContext,
+            stitchedContext: stitchedContext.trim(),
             status: 'ready',
           },
         });
 
-        return result.stitchedContext;
+        return stitchedContext.trim();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error during context generation';
         await prisma.specGroup.update({
