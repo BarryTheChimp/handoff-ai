@@ -491,35 +491,33 @@ export async function specsRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      try {
-        // Run translation synchronously (can take 30-60 seconds)
-        // For production, this should be moved to a job queue
-        const result = await translationService.translate(id);
+      // Update status to translating
+      await prisma.spec.update({
+        where: { id },
+        data: { status: 'translating' },
+      });
 
-        return reply.status(200).send({
+      // Start translation asynchronously
+      // We return 202 immediately, translation continues in background
+      translationService.translate(id).catch(async (error) => {
+        console.error(`Translation failed for spec ${id}:`, error);
+        // Mark spec as failed
+        await prisma.spec.update({
+          where: { id },
           data: {
-            specId: result.specId,
-            epicsCreated: result.epicsCreated,
-            featuresCreated: result.featuresCreated,
-            storiesCreated: result.storiesCreated,
-            qualityScore: result.enrichment.qualityScore,
-            coveragePercent: result.enrichment.coverage.coveragePercent,
-            warnings: result.warnings,
-            durationMs: result.durationMs,
+            status: 'error',
+            errorMessage: error instanceof Error ? error.message : 'Translation failed',
           },
-        });
-      } catch (error) {
-        if (error instanceof TranslationError) {
-          return reply.status(500).send({
-            error: {
-              code: 'TRANSLATION_ERROR',
-              message: error.message,
-              phase: error.phase,
-            },
-          });
-        }
-        throw error;
-      }
+        }).catch(console.error);
+      });
+
+      return reply.status(202).send({
+        data: {
+          specId: id,
+          status: 'translating',
+          message: 'Translation started',
+        },
+      });
     }
   );
 

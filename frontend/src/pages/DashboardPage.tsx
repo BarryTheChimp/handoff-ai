@@ -269,6 +269,17 @@ export function DashboardPage() {
       if (spec.status === 'ready') {
         toast.info('Generating work items', 'AI is translating your spec...');
         await specsApi.translate(specId);
+
+        // Wait for translation to complete (poll)
+        spec = await specsApi.get(specId);
+        while (spec.status === 'translating') {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          spec = await specsApi.get(specId);
+        }
+
+        if (spec.status === 'error') {
+          throw new Error(spec.errorMessage || 'Translation failed');
+        }
       } else if (spec.status === 'error') {
         throw new Error(spec.errorMessage || 'Extraction failed');
       }
