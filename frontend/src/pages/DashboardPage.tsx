@@ -257,26 +257,41 @@ export function DashboardPage() {
         body: JSON.stringify({ metadata: answers }),
       });
 
-      // Trigger extraction
-      await specsApi.extract(specId);
-      toast.info('Extracting content', 'Parsing document structure...');
-
-      // Wait for extraction to complete (poll)
+      // Get current spec status first
       let spec = await specsApi.get(specId);
-      while (spec.status === 'extracting') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Handle based on current status
+      if (spec.status === 'uploaded') {
+        // Need to extract first
+        toast.info('Extracting content', 'Parsing document structure...');
+        await specsApi.extract(specId);
+
+        // Wait for extraction to complete
         spec = await specsApi.get(specId);
+        while (spec.status === 'extracting') {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          spec = await specsApi.get(specId);
+        }
       }
 
-      // If extraction succeeded, trigger translation
+      if (spec.status === 'extracting') {
+        // Already extracting, wait for it
+        toast.info('Extracting content', 'Parsing document structure...');
+        while (spec.status === 'extracting') {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          spec = await specsApi.get(specId);
+        }
+      }
+
       if (spec.status === 'ready') {
+        // Ready for translation
         toast.info('Generating work items', 'AI is translating your spec...');
         await specsApi.translate(specId);
         spec = await specsApi.get(specId);
       }
 
-      // If already translating (from previous attempt or just started), wait for it
       if (spec.status === 'translating') {
+        // Already translating, wait for it
         toast.info('Generating work items', 'AI is translating your spec...');
         while (spec.status === 'translating') {
           await new Promise(resolve => setTimeout(resolve, 2000));
@@ -287,7 +302,9 @@ export function DashboardPage() {
       // Check final status
       if (spec.status === 'error') {
         throw new Error(spec.errorMessage || 'Processing failed');
-      } else if (spec.status !== 'translated') {
+      } else if (spec.status === 'translated') {
+        // Success!
+      } else {
         throw new Error(`Unexpected status: ${spec.status}`);
       }
 
