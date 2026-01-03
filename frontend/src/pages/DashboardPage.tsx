@@ -272,19 +272,23 @@ export function DashboardPage() {
       if (spec.status === 'ready') {
         toast.info('Generating work items', 'AI is translating your spec...');
         await specsApi.translate(specId);
-
-        // Wait for translation to complete (poll)
         spec = await specsApi.get(specId);
+      }
+
+      // If already translating (from previous attempt or just started), wait for it
+      if (spec.status === 'translating') {
+        toast.info('Generating work items', 'AI is translating your spec...');
         while (spec.status === 'translating') {
           await new Promise(resolve => setTimeout(resolve, 2000));
           spec = await specsApi.get(specId);
         }
+      }
 
-        if (spec.status === 'error') {
-          throw new Error(spec.errorMessage || 'Translation failed');
-        }
-      } else if (spec.status === 'error') {
-        throw new Error(spec.errorMessage || 'Extraction failed');
+      // Check final status
+      if (spec.status === 'error') {
+        throw new Error(spec.errorMessage || 'Processing failed');
+      } else if (spec.status !== 'translated') {
+        throw new Error(`Unexpected status: ${spec.status}`);
       }
 
       toast.success('Processing complete', 'Work items have been generated');
