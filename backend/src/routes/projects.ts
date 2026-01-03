@@ -393,16 +393,12 @@ export async function projectsRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await prisma.project.findUnique({
         where: { id },
-        select: { logoUrl: true },
+        select: { id: true, logoUrl: true },
       });
 
       if (!project || !project.logoUrl) {
-        return reply.status(404).send({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Logo not found',
-          },
-        });
+        // Return 204 No Content for missing logos (avoids CORS issues)
+        return reply.status(204).send();
       }
 
       try {
@@ -423,12 +419,12 @@ export async function projectsRoutes(app: FastifyInstance): Promise<void> {
           .header('Cross-Origin-Resource-Policy', 'cross-origin')
           .send(buffer);
       } catch {
-        return reply.status(404).send({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Logo file not found',
-          },
+        // File missing from storage - clear the logoUrl and return 204
+        await prisma.project.update({
+          where: { id },
+          data: { logoUrl: null },
         });
+        return reply.status(204).send();
       }
     }
   );

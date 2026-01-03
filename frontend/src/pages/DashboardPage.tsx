@@ -241,7 +241,10 @@ export function DashboardPage() {
 
   // Process spec after questionnaire (extract + translate)
   const processSpec = async (specId: string, answers: QuestionnaireAnswers) => {
+    // Close modal immediately so user can see the spec list
+    setUploadedSpec(null);
     setIsProcessing(true);
+
     try {
       const API_BASE = import.meta.env.VITE_API_URL || '/api';
       // Update spec metadata with questionnaire answers
@@ -295,7 +298,6 @@ export function DashboardPage() {
       toast.error('Processing failed', message);
     } finally {
       setIsProcessing(false);
-      setUploadedSpec(null);
     }
   };
 
